@@ -618,6 +618,111 @@ def FSquant(data, wgts, quants, checktie):
 	return qnts, cndmnum, qntype
 
 
+def onerun(parmvec):
+	# Initialize placeholders and variables
+	zero_vec = np.zeros_like(parmvec)
+	fix_vals = np.ones_like(parmvec)  # Replace with actual fixed values
+	parm_trans = 1  # Assuming some transformation flag, replace if needed
+
+	all_parms = parmvec * zero_vec + fix_vals * (1 - zero_vec)
+
+	if parm_trans == 1:
+		pref_parms, fin_parms, gam, ag2, nshft, fcost = makepvecs(all_parms)
+	else:
+		pref_parms, fin_parms, gam, ag2, nshft, fcost = makepvecs2(all_parms)
+
+	# Dataset preparation
+	dataset = datasetup(gam, ag2, nshft, fcost)
+	(TFPaggshks, TFP_FE, TFPaggeffs, tkqntdat, DAqntdat, CAqntdat, nkqntdat,
+	 gikqntdat, ykqntdat, divqntdat, dvgqntdat, obsavgdat, tkqcnts, divqcnts, dvgqcnts,
+	 std_zi, zvec, fevec, k_0, optNK, optKdat, countadj) = dataset
+
+	# Handle near-zero values in `dvgqntdat`
+	tinydvg = np.abs(dvgqntdat) < 0.1
+	dvgqntdat = dvgqntdat * (1 - tinydvg) + 0.1 * tinydvg * (2 * (dvgqntdat > 0) - 1)
+
+	# Handle missing data
+	missmomvec, obsmmtind = missingvec(tkqntdat, divqntdat, dvgqntdat, DAqntdat, CAqntdat,
+									   nkqntdat, gikqntdat, ykqntdat, obsavgdat, tkqcnts,
+									   divqcnts, dvgqcnts)
+	alldmoms = makemomvec(tkqntdat, divqntdat, dvgqntdat, DAqntdat, CAqntdat, nkqntdat,
+						  gikqntdat, ykqntdat, obsavgdat)
+
+	aggshks = np.hstack([0, TFPaggshks, 0])
+	zshks = aggshks.T + std_zi * idioshks  # Ensure `idioshks` is defined
+	zshks = zshks.flatten()
+	feshks = TFP_FE[randrows]  # Ensure `randrows` is defined
+	k_0 = k_0[randrows]  # Ensure `randrows` is defined
+	optNK = optNK[randrows]  # Ensure `randrows` is defined
+
+	# Save intermediate results, replace `save_path` with actual save logic if needed
+	# save_results(iopath, job, pref_parms, fin_parms, zvec, fevec, zshks, feshks)
+
+	execret = exec_rulecall(rulecall, "")  # Ensure `exec_rulecall` is defined
+
+	# Load simulations
+	load_sims(fcost, gam, ag2, nshft, k_0, optNK)
+
+	# Load path simulations
+	# This is a placeholder, replace with actual data loading
+	(cht_sim, aliveSim, ialiveSim, dvgaliveSim, divaliveSim, CAalivesim, totKSim, divSim,
+	 DAratioSim, dvgSim, NKratioSim, GIKratioSim, CAratioSim, YKratioSim, avxerr, simwgts,
+	 ftype_sim) = load_sim_data(iopath)
+
+	if sizevar == 1:
+		fsSim = feshks
+	elif sizevar == 2:
+		fsSim = av_cows[randrows] / famsize[randrows]  # Ensure `av_cows` and `famsize` are defined
+
+	if GMMsort == 0:
+		profsort = 0
+	else:
+		profsort = ftype_sim
+
+	sim_profiles = simprofs(profsort, timespan, FSstate, checktie, fsSim, cht_sim, aliveSim,
+							ialiveSim, dvgaliveSim, divaliveSim, CAalivesim, totKSim, divSim,
+							dvgSim, DAratioSim, NKratioSim, GIKratioSim, CAratioSim, YKratioSim,
+							simwgts, prngrph)
+
+	(tkqntsim, DAqntsim, nkqntsim, gikqntsim, CAqntsim, ykqntsim, divqntsim, dvgqntSim, obsavgsim) = sim_profiles
+
+	allsmoms = makemomvec(tkqntsim, divqntsim, dvgqntSim, DAqntsim, CAqntsim, nkqntsim,
+						  gikqntsim, ykqntsim, obsavgsim)
+
+	wgtvec = makewgtvec(tkqntsim, divqntsim, dvgqntSim, DAqntsim, CAqntsim, nkqntsim,
+						gikqntsim, ykqntsim, obsavgsim, countadj)
+	datamoms = selif(alldmoms, 1 - missmomvec)
+	simmoms = selif(allsmoms, 1 - missmomvec)
+
+	wgtvec = selif(wgtvec, 1 - missmomvec) / datamoms
+	rn = wgtvec.shape[0]
+	wgtmtx = np.diag(wgtvec ** 2)
+
+	diff = datamoms - simmoms
+	criter = diff.T @ wgtmtx @ diff
+
+	# Save final results
+	# save_results(iopath, datamoms, simmoms, diff, criter, wgtmtx, alldmoms, allsmoms, missmomvec, obsmmtind)
+
+	lbl = ["Total Capital       ", "Dividends           ", "Debt/Assets         ",
+		   "Cash/Assets         ", "Int. Goods/Capital  ", "Gross Invst/Capital ",
+		   "Output/Capital      ", "Exit Errors         ", "Total               "]
+
+	if divmmts == 0:
+		lbl = [lbl[0]] + lbl[2:9]
+		obsmmtind = obsmmtind[[0] + list(range(2, 8)), :]
+
+	for iCrit in range(len(lbl) - 1):
+		subcrit = diff[obsmmtind[iCrit, 0]:obsmmtind[iCrit, 1]]
+		subwgt = wgtmtx[obsmmtind[iCrit, 0]:obsmmtind[iCrit, 1], obsmmtind[iCrit, 0]:obsmmtind[iCrit, 1]]
+		subcrit = subcrit.T @ subwgt @ subcrit
+		print(lbl[iCrit], subcrit)
+
+	print(lbl[-1], criter)
+
+	return criter
+
+
 # if __name__ == "__main__":
 # 	mvcode = -99
 # 	checktie = 1

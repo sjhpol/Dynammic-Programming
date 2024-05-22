@@ -203,3 +203,17 @@ TFPaggshks, TFP_FE, TFPaggeffs, tkqntdat, DAqntdat, CAqntdat, nkqntdat, gikqntda
 	zvec, fevec, k_0, optNK, optKdat, countadj = datasetup(gam, ag2, nshft, fcost, rloutput,\
 														   totcap, intgoods, obsmat, farmtype, av_cows, famsize)
 
+### FOR GRAPHS AND STUFF
+# datadscr(0, TFP_FE, FSstate, timespan, datawgts, obsmat, iobsmat, famsize, rloutput,
+# 		 totcap, equity, LTKratio, debtasst, grossinv, gikratio, intgoods, nkratio,
+# 		 cashflow, dividends, optKdat)
+#
+# getaggrph(netinv, iobsmat, intgoods, obsmat, dividends, cashflow, totcap, owncap, yrseq,
+# 		  firstyr, TFPaggeffs, statacrap, capscale)
+###
+
+numparms = parmvec.shape[0]
+fixvals = parmvec
+zerovec = 1
+print("Model run at Initial Parameter Values")
+onerun(parmvec)
