@@ -203,3 +203,10 @@ TFPaggshks, TFP_FE, TFPaggeffs, tkqntdat, DAqntdat, CAqntdat, nkqntdat, gikqntda
 	zvec, fevec, k_0, optNK, optKdat, countadj = datasetup(gam, ag2, nshft, fcost, rloutput,\
 														   totcap, intgoods, obsmat, farmtype, av_cows, famsize)
 
+# datadscr her. Den laver graphs! (og sorterer med TFP, men det kan vi tage senere).
+# (data describe)
+
+# getaggrph
+# get aggregate graphs her! Laver også graphs
+
+ 

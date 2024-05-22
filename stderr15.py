@@ -5,9 +5,12 @@ from babyfarm42b_cash import *
 def proc(parmvec, numboot, aggshkscl):
 
     # Define local variables (assuming numpy arrays)
-    initages, inityrs, initta, initK, initdebt, IDsim, obssim, iobssim, dvgobssim, cht_sim, ftype_sim, simwgts = ...  # Load data from GAUSS files
-    datamoms, wgtmtx, missmomvec, simmoms, alldmoms, allsmoms = ...  # Load data from GAUSS files
-    allparms = parmvec * np.zeros_like(parmvec) + fixvals * (1 - np.zeros_like(parmvec))
+    #initages, inityrs, initta, initK, initdebt, IDsim, obssim, iobssim, dvgobssim, cht_sim, ftype_sim, simwgts = ...  # Load data from GAUSS files
+    #datamoms, wgtmtx, missmomvec, simmoms, alldmoms, allsmoms = ...  # Load data from GAUSS files
+    
+    allparms = parmvec * zerovec + fixvals * (1 - zerovec)
+    
+    
     prefparms, finparms, gam, ag2, nshft, fcost = makepvecs(allparms)  # Implement this function from GAUSS
     parmtrans = 0
     allparms = np.concatenate((prefparms[[0, 1, 3, 4, 5, 6, 7]], finparms[[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]]))
