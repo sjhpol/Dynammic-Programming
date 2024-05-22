@@ -1101,7 +1101,7 @@ def main_loop(input_op, output_op, input_liq, output_liq) :
 
 output_final_op, output_final_liq = main_loop(getOperatingDec_input, getOperatingDec_output, getliqDecision_input, getLiqDecision_output) 
 
-# Den dropper dem her lige nu i dit default usr/directory
+# Den dropper dem her lige nu i dit default usr/directory. Oh well!
 np.save("feValues", feValues)
 np.save("feValues", feValues)
 np.save("zValues", zValues)
