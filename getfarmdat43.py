@@ -771,7 +771,7 @@ def dataprofs(FType, farmsize, FSstate, timespan, datawgts, checktie, chrttype, 
 	return tkqntdat, DAqntdat, CAqntdat, nkqntdat, gikqntdat, ykqntdat, divqntdat, dvgqntdat, obsavgdat, tkqcnts, divqcnts, dvgqcnts, countadj
 
 def generate_all_summary_statistics():
-	"""Outputs summary statistics"""
+	"""Outputs summary statistics in LATEX format"""
 
 	(IDs, owncap, obsmat, lsdcap, totcap, LTKratio, totasst, totliab, equity, cash,
 			CAratio, debtasst, intgoods, nkratio, rloutput, ykratio, cashflow, dividends,
@@ -779,27 +779,38 @@ def generate_all_summary_statistics():
 			netinv, nikratio, iobsmat, age_2001, init_yr, init_age, av_cows, famsize, cohorts,
 			chrttype, milktype, herdtype, farmtype, avgage, datawgts, initstate) = loaddat(timespan, np.array([1, 0]), 1, chrtnum, chrtstep, sizescreen, wgtddata) # du skal ikke spørge hvorfor
 
-	print("Summary statistics")
+	# LATEX table header
+	print("\\begin{tabular}{lccccc}")
+	print("\\headrow{Variable & Mean & Median & Std. Dev. & Min & Max} \\\\")
 
-	summary_statistic_dictionary = {"initial age": init_age, "divident growth": divgrowth}
+	summary_statistic_dictionary = {
+								"Family size": famsize,
+								"youngest operator age": init_age,
+								"average age": avgage,
+								"divident growth": divgrowth}
 
-	for element, key in summary_statistic_dictionary:
-			print(f"{key} {return_individual_sum_stats(element)}")
+	# Loop through the dictionary and calculate statistics
+	for key, element in summary_statistic_dictionary.items():
+		summary_statistic = return_individual_sum_stats(element)
+		# Format statistics for LATEX output
+		print(f"{key} & {summary_statistic[0]:.2f} & {summary_statistic[1]:.2f} & {summary_statistic[2]:.2f} & {summary_statistic[3]:.0f} & {summary_statistic[4]:.0f} \\\\")
 
-	#for element in kwargs:
-		
+	# LATEX table footer
+	print("\\end{tabular}")
 
 
 def return_individual_sum_stats(statistic):
 	mean = np.mean(statistic)
 	median = np.median(statistic)
 	std = np.std(statistic)
+	min = np.min(statistic)
+	max = np.max(statistic)
 
-	return np.array((mean, median, std))
+	return np.array((mean, median, std, min, max))
 
-
-print("wanna make summary statistics")
-generate_all_summary_statistics()
+if __name__ == "__main__":
+	print("__name__ == '__main__'")
+	generate_all_summary_statistics()
 
 
 #
