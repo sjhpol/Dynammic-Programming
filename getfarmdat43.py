@@ -8,6 +8,9 @@ from simcrit41 import getchrt, getcorrs, getqunts, tauch, FSquant
 from markch import markch
 from variables import *
 
+import matplotlib.pyplot as plt
+
+
 
 def removeFE(datamat_j, obsmat_j):
 	# Calculate the sum of observations for each individual
@@ -31,8 +34,8 @@ def removeFE(datamat_j, obsmat_j):
 def loaddat(nyrsdat, lsdadj, cashtfp, chrtnum, chrtstep, sizescreen, wgtddata):
 	print("THE DATA SPEAKS!")
 
-	datapath = r"C:\Users\Simon\Downloads\Jones_Pratap_AER_2017-0370_Archive\Jones_Pratap_AER_2017-0370_Archive\estimation_fake\data\Full_Sample"
-
+	#datapath = r"C:\Users\Simon\Downloads\Jones_Pratap_AER_2017-0370_Archive\Jones_Pratap_AER_2017-0370_Archive\estimation_fake\data\Full_Sample"
+	datapath = "/Users/hjaltewallin/Code/Jones_Pratap_AER_2017-0370_Archive/estimation_fake/data/Full_Sample"
 	numfarms = 363
 
 	datstr = os.path.join(datapath, "fake_av_famsize.txt")
@@ -767,6 +770,36 @@ def dataprofs(FType, farmsize, FSstate, timespan, datawgts, checktie, chrttype, 
 
 	return tkqntdat, DAqntdat, CAqntdat, nkqntdat, gikqntdat, ykqntdat, divqntdat, dvgqntdat, obsavgdat, tkqcnts, divqcnts, dvgqcnts, countadj
 
+def generate_all_summary_statistics():
+	"""Outputs summary statistics"""
+
+	(IDs, owncap, obsmat, lsdcap, totcap, LTKratio, totasst, totliab, equity, cash,
+			CAratio, debtasst, intgoods, nkratio, rloutput, ykratio, cashflow, dividends,
+			divgrowth, dvgobsmat, DVKratio, DVFEratio, eqinject, goteqinj, grossinv, gikratio,
+			netinv, nikratio, iobsmat, age_2001, init_yr, init_age, av_cows, famsize, cohorts,
+			chrttype, milktype, herdtype, farmtype, avgage, datawgts, initstate) = loaddat(timespan, np.array([1, 0]), 1, chrtnum, chrtstep, sizescreen, wgtddata) # du skal ikke spørge hvorfor
+
+	print("Summary statistics")
+
+	summary_statistic_dictionary = {"initial age": init_age, "divident growth": divgrowth}
+
+	for element, key in summary_statistic_dictionary:
+			print(f"{key} {return_individual_sum_stats(element)}")
+
+	#for element in kwargs:
+		
+
+
+def return_individual_sum_stats(statistic):
+	mean = np.mean(statistic)
+	median = np.median(statistic)
+	std = np.std(statistic)
+
+	return np.array((mean, median, std))
+
+
+print("wanna make summary statistics")
+generate_all_summary_statistics()
 
 
 #
