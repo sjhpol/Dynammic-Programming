@@ -203,17 +203,60 @@ TFPaggshks, TFP_FE, TFPaggeffs, tkqntdat, DAqntdat, CAqntdat, nkqntdat, gikqntda
 	zvec, fevec, k_0, optNK, optKdat, countadj = datasetup(gam, ag2, nshft, fcost, rloutput,\
 														   totcap, intgoods, obsmat, farmtype, av_cows, famsize)
 
-### FOR GRAPHS AND STUFF
-# datadscr(0, TFP_FE, FSstate, timespan, datawgts, obsmat, iobsmat, famsize, rloutput,
-# 		 totcap, equity, LTKratio, debtasst, grossinv, gikratio, intgoods, nkratio,
-# 		 cashflow, dividends, optKdat)
-#
-# getaggrph(netinv, iobsmat, intgoods, obsmat, dividends, cashflow, totcap, owncap, yrseq,
-# 		  firstyr, TFPaggeffs, statacrap, capscale)
-###
+# datadscr her. Den laver graphs! (og sorterer med TFP, men det kan vi tage senere).
+# (data describe)
+
+# getaggrph
+# get aggregate graphs her! Laver også graphs
+
+ # 					HER KALDER VI VFI				#
 
 numparms = parmvec.shape[0]
 fixvals = parmvec
-zerovec = 1
-print("Model run at Initial Parameter Values")
-onerun(parmvec)
+zerovec = 1 					# Note, that this becomes a vector later <_<. Also never has zeroes
+
+# Run the model, if necessary. 
+
+prnres    = 1
+prngrph   = 0
+prnum     = 1     # Parameters for Honore and Kyriazidou's Simplex search algorithm @
+maxsec    = 3600*24*20
+ftol      = 0.00005
+maxiter   = 1500
+feval     = 0
+
+# ngl stopped this into Google Gemini because I was getting frustrated. Let's hope it still works!!
+# STUFF FOR STANDARD ERRORS. IGNORE FOR NOW
+_="""
+numparms = parmvec.size
+zerovec = np.ones((numparms, 1))
+
+# Set specific elements in zerovec based on conditions
+zerovec[2] = (1 - linprefs) * (1 - (specnum == 4)) * (1 - (specnum == 5))
+zerovec[3] = 1 - inadaU
+zerovec[4:6] = np.ones((2, 1)) * (1 - nobeq) * (1 - (specnum == 4))
+zerovec[6] = (1 - (specnum == 2)) * (1 - (specnum == 7))  # Assuming NP Benefit is a placeholder
+
+# Set zerovec[7] to 0 (assuming Consumption floor is a comment)
+zerovec[7] = 0
+
+# Handle elements 9 and 11 based on numFTypes
+if numparms >= 12:
+	zerovec[9:11] = ((np.ones((2, 1)) * (numFTypes - 1)) > 0.999)
+else:
+	raise ValueError("zerovec must have at least 12 elements")
+
+# Set the last five elements
+zerovec[numparms - 5] = 1 - nonshft
+zerovec[numparms - 4] = 1 - fixlam
+zerovec[numparms - 3] = 1 - noDScost
+zerovec[numparms - 1] = 1 - nofcost
+zerovec[numparms] = 1 - nocolcnst
+
+# Keep only elements where zerovec is not close to 1 (assuming tolerance of 0.99)
+colkeep = np.arange(1, numparms + 1)
+colkeep = colkeep * zerovec
+colkeep = np.sort(colkeep)
+zn = np.sum(colkeep < 0.99)
+colkeep = colkeep[zn + 1:]
+"""
