@@ -781,11 +781,12 @@ def generate_all_summary_statistics():
 
 	# LATEX table header
 	print("\\begin{tabular}{lccccc}")
-	print("\\headrow{Variable & Mean & Median & Std. Dev. & Min & Max} \\\\")
+	print("\\headrow{Variable & Mean & Median & Std. Dev. & Max & Min} \\\\")
 
 	summary_statistic_dictionary = {
 								"Family size": famsize,
 								"youngest operator age": init_age,
+								"totals assets": totasst,
 								"average age": avgage,
 								"divident growth": divgrowth}
 
@@ -793,21 +794,40 @@ def generate_all_summary_statistics():
 	for key, element in summary_statistic_dictionary.items():
 		summary_statistic = return_individual_sum_stats(element)
 		# Format statistics for LATEX output
-		print(f"{key} & {summary_statistic[0]:.2f} & {summary_statistic[1]:.2f} & {summary_statistic[2]:.2f} & {summary_statistic[3]:.0f} & {summary_statistic[4]:.0f} \\\\")
+		print(f"{key} \t\t& {summary_statistic[0]:.2f} & {summary_statistic[1]:.2f} & {summary_statistic[2]:.2f} & {summary_statistic[3]:.0f} & {summary_statistic[4]:.0f} \\\\")
 
 	# LATEX table footer
 	print("\\end{tabular}")
 
 
-def return_individual_sum_stats(statistic):
-	mean = np.mean(statistic)
-	median = np.median(statistic)
-	std = np.std(statistic)
-	min = np.min(statistic)
-	max = np.max(statistic)
+def return_individual_sum_stats(statistic, mvcode=-99):
+    """
+    Calculates summary statistics, handling missing values (mvcode).
 
-	return np.array((mean, median, std, min, max))
+    Args:
+        statistic (numpy.ndarray): The array containing data for which to calculate statistics.
+        mvcode (int, optional): The code representing missing values. Defaults to -99.
 
+    Returns:
+        numpy.ndarray: An array containing the calculated statistics (mean, median, std, min, max).
+    """
+
+    # Remove observations with missing values (mvcode) before calculating statistics
+    filtered_statistic = statistic[statistic != mvcode]
+
+    # Check if any data remains after filtering
+    if not filtered_statistic.any():
+        raise ValueError("No valid data for calculating statistics. All values are missing (mvcode).")
+
+    mean = np.mean(filtered_statistic)
+    median = np.median(filtered_statistic)
+    std = np.std(filtered_statistic)
+    min = np.min(filtered_statistic)
+    max = np.max(filtered_statistic)
+
+    return np.array((mean, median, std, min, max))
+
+################   ENTRY POINT
 if __name__ == "__main__":
 	print("__name__ == '__main__'")
 	generate_all_summary_statistics()
