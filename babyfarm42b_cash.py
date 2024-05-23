@@ -225,6 +225,7 @@ ftol      = 0.00005
 maxiter   = 1500
 feval     = 0
 
+# ngl stopped this into Google Gemini because I was getting frustrated. Let's hope it still works!!
 numparms = parmvec.size
 zerovec = np.ones((numparms, 1))
 
@@ -239,9 +240,9 @@ zerovec[7] = 0
 
 # Handle elements 9 and 11 based on numFTypes
 if numparms >= 12:
-zerovec[9:11] = ((np.ones((2, 1)) * (numFTypes - 1)) > 0.999)
+	zerovec[9:11] = ((np.ones((2, 1)) * (numFTypes - 1)) > 0.999)
 else:
-raise ValueError("zerovec must have at least 12 elements")
+	raise ValueError("zerovec must have at least 12 elements")
 
 # Set the last five elements
 zerovec[numparms - 5] = 1 - nonshft

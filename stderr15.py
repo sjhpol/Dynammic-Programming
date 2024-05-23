@@ -1,24 +1,27 @@
 import numpy as np
-from babyfarm42b_cash import *
+from babyfarm42b_cash import * # mostly just to access the massive scope in the og document. Don't actually like this.
+from simcrit41 import makepvecs
 
+# TODO: Problem til næste uge
+# Idé: V \hat kræver 400 iterationer til at estimere med bootstrap. 
+#      Vi snyder lidt, og tager vores med hjemmefra :)
 
-def proc(parmvec, numboot, aggshkscl):
+def stderrs(parmvec, numboot, aggshkscl):
 
     # Define local variables (assuming numpy arrays)
     #initages, inityrs, initta, initK, initdebt, IDsim, obssim, iobssim, dvgobssim, cht_sim, ftype_sim, simwgts = ...  # Load data from GAUSS files
     #datamoms, wgtmtx, missmomvec, simmoms, alldmoms, allsmoms = ...  # Load data from GAUSS files
     
-    allparms = parmvec * zerovec + fixvals * (1 - zerovec)
+    allparms = parmvec * zerovec + fixvals * (1 - zerovec) # 
     
-    
-    prefparms, finparms, gam, ag2, nshft, fcost = makepvecs(allparms)  # Implement this function from GAUSS
+    prefparms, finparms, gam, ag2, nshft, fcost = makepvecs(allparms) 
     parmtrans = 0
-    allparms = np.concatenate((prefparms[[0, 1, 3, 4, 5, 6, 7]], finparms[[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]]))
+    allparms = np.concatenate((prefparms[[0, 1, 3, 4, 5, 6, 7]], finparms[[0, 1, 2, 3, 4, 5, 6, 7, 9, 10]])) # notice the missing 8 in finparms. WHYYYY
     rn = allparms.shape[0]
     fixvals = allparms.copy()  # Global variable
-    shortvec = allparms[colkeep]  # Assuming colkeep is defined elsewhere
+    shortvec = allparms[colkeep] 
     np = shortvec.shape[0]
-    gradscl = np.ones((np, 1))  # Placeholder for now
+    gradscl = np.ones((np, 1))  # ''
     prnres = 1
     prngrph = 0
 
