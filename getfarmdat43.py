@@ -303,7 +303,7 @@ def loaddat(nyrsdat, lsdadj, cashtfp, chrtnum, chrtstep, sizescreen, wgtddata):
 	nikratio = iobsmat * nikratio + imvc2
 	invtyinv = obsmat * invtyinv + mvc2
 
-	# //  Remove observations not in old, truncated dataset
+	# // Remove observations not in old, truncated dataset
 	subsmpl = (av_cows > sizescreen[0]) & (av_cows <= sizescreen[1])
 	subsmpl = np.where(subsmpl)[0]
 
@@ -783,6 +783,8 @@ def generate_all_summary_statistics():
 	print("\\begin{tabular}{lccccc}")
 	print("\\headrow{Variable & Mean & Median & Std. Dev. & Max & Min} \\\\")
 
+	# TODO: Implement periode-kode, som angiver, hvilken periode det er i. 
+
 	summary_statistic_dictionary = {
 								"Family size": famsize,
 								"youngest operator age": init_age,
@@ -798,7 +800,6 @@ def generate_all_summary_statistics():
 
 	# LATEX table footer
 	print("\\end{tabular}")
-
 
 def return_individual_sum_stats(statistic, mvcode=-99):
     """
@@ -827,7 +828,7 @@ def return_individual_sum_stats(statistic, mvcode=-99):
 
     return np.array((mean, median, std, min, max))
 
-################   ENTRY POINT
+################   ENTRY POINT   ########
 if __name__ == "__main__":
 	print("__name__ == '__main__'")
 	generate_all_summary_statistics()
