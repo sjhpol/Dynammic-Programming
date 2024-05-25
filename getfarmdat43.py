@@ -855,17 +855,23 @@ def load_file(filename, subdir="iofiles", ndmin=1):
     print(f"Error: File '{filepath}' not found.")
     return None
 
-# We need this badboy to make the criterion function. But it will take a while to make ...
+
 # we use parmvec here to avoid problems of indeterminate scope 
 
 def loadSims(parmvec, subdir="iofiles"):
+	"""
+	This function is run after onerun(.), and transform our outputs to outputs, that we can graph. 
+	And also use to calculate SMD-criterion. So it's very useful!!!
+	"""
+	
 	magic_constant = 24 # TODO: Find out why this is
 	print("Loading simulations...")
 
 	# We need to load a series of files here.
 	ftype_sim = load_file("ftype_sim.txt", subdir) ### NOTE: GAUSS IS *NOT* CASE-sensitive. Learned that the annoying way
 	feshks = load_file("ftype_sim.txt", subdir)
-
+	# GRRRR we need to run initdist to get these files.
+	#obsSim = load_file("obs")
 	# obsSim, iobsSim, dvgobsSim, FEshks, IDsim, simwgts
 
 	ageS 		= load_file("ageS.txt", subdir).reshape(timespan + 1, numsims+magic_constant).T
@@ -925,17 +931,100 @@ def loadSims(parmvec, subdir="iofiles"):
 	eqinjSim = divSim.copy()  # Copy dividend for equity injection
 	goteqiSim = eqinjSim > 0  # Logical comparison for positive equity injection
 
+	# Identify alive firms (investment decision)
+	aliveSim = liqDecS == 0  # Logical comparison for alive firms
+
+	# Forward-looking alive firms (assuming timespan starts from 2)
+	fwdalivesim = aliveSim[:, 2:timespan+1]
+
+	# Net investment
+	NInvSim = (totKS[:, 2:timespan+1] * fwdalivesim) * bigG / (1 + gkE) - totKS[:, 1:timespan] * aliveSim[:, 1:timespan]
+
+	# Depreciation
+	deprSim = totKS[:, 1:timespan] * aliveSim[:, 1:timespan] * dlt
+
+	# Gross investment
+	GInvSim = NInvSim + deprSim
+
+	# Total capital stock (avoid division by zero)
+	totKSim = totKS[:, 1:timespan] + 1e-10
+
+	# Profit
+	profitSim = outputSim - totKSim * rdgE - expenseSim
+
+	# Net worth
+	netWorthSim = assetSim - debtSim
+
+	# Investment to output ratio (assuming hetag2 and expenseSim-fcost+nshft are element-wise non-zero)
+	iZvalSim = outputSim / ((totKSim**hetgam) * ((expenseSim - fcost + nshft)**hetag2))
+
+	# Liquidation decision (excluding first period)
+	liqDecSim = liqDecS[:, 1:timespan]
+
+	# Alive firms with forward-looking adjustment (excluding simulated liquidators)
+	ialiveSim = aliveSim[:, 1:timespan] * fwdalivesim
+
+	# Debt-to-value of exiting firms with lag (excluding the last period)
+	dvgaliveSim = aliveSim[:, 1+divlag:timespan+divlag] * (np.zeros((numsims, 1)) != aliveSim[:, 1+divlag:timespan+divlag-1])
+
+	# Alive firms (excluding first period)
+	aliveSim = aliveSim[:, 1:timespan]
+
+	# Exit errors (based on observed exit and simulated exit)
+	exiterrs = (alivesim == 0) * obsSim  # Element-wise multiplication
+
+	# Any exit errors in the simulation
+	gotxerrs = (exiterrs * np.ones((timespan, 1)) > 0).any(axis=0)  # Check if any errors exist in any simulation
+
+	# List of unique firm IDs
+	iDlist = np.unique(IDSim)
+
+	# Dummy variables for fixed effects regression
+	iDDums = IDSim[:, None] == iDlist  # Broadcast comparison for dummies
+
+	# Average exit errors by fixed effects
+	# Assuming invpd is a function for inverting a matrix with potential singular values
+	xerravg = np.linalg.pinv(iDDums.T @ iDDums) @ (iDDums.T @ (gotxerrs != exiterrs))
+
+	# Assuming iobsSim, dvgobsSim, obsSim, cashlag, divaliveSim (potentially from previous steps) are already defined
+
+	# Alive firms with observation adjustment
+	ialiveSim = iobsSim * ialiveSim  # Element-wise multiplication
+
+	# Debt-to-value of exiting firms with observation adjustment
+	dvgaliveSim = dvgobsSim * dvgaliveSim  # Element-wise multiplication
+
+	# Alive firms based on observations
+	aliveSim = obsSim * aliveSim  # Element-wise multiplication
+
+	# Forward-looking alive firms with observation adjustment
+	fwdalivesim = obsSim * fwdalivesim  # Element-wise multiplication
+
+	# Debt-weighted average capital stock of alive firms
+	divaliveSim = divlag * fwdalivesim + (1 - divlag) * aliveSim  # Weighted average
+
+	# Debt-value product of alive firms
+	DVKalivesim = divaliveSim * aliveSim  # Element-wise multiplication
+
+	# Cash-weighted average capital stock of alive firms
+	cshaliveSim = cashlag * fwdalivesim + (1 - cashlag) * aliveSim  # Weighted average
+
+	# Cash-value product of alive firms
+	CAaliveSim = cshaliveSim * aliveSim  # Element-wise multiplication
+
+
+
+
 def comparison_graph(simulated_series, real_series):
 	# Given a time series of simulated and real data, where the x-axis is age, 
 	# and the y-axis is given by the input, output two graphs
 	pass
 
 
-# We need the data-setup function ...
+
 
 def datasetup(gam, ag2, nshft, fcost):
 	# Generate a bunch of variables that we need!!
-
 
 	# We need access to these variables so that we can calculate TFP next line (first 4 arguments)
 	(IDs, owncap, obsmat, lsdcap, totcap, LTKratio, totasst, totliab, equity, cash,
@@ -1042,7 +1131,7 @@ if __name__ == "__main__":
 	print("__name__ == '__main__'")
 	generate_all_summary_statistics()
 
-	load_all_simulations()
+	#loadSims(parmvec)
 
 
 
