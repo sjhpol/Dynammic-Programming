@@ -828,10 +828,23 @@ def return_individual_sum_stats(statistic, mvcode=-99):
 
     return np.array((mean, median, std, min, max))
 
+def load_simulations():
+	pass
+
+def comparison_graph(simulated_series, real_series):
+	# Given a time series of simulated and real data, where the x-axis is age, 
+	# and the y-axis is given by the input, output two graphs
+	pass
+
+
+
+
 ################   ENTRY POINT   ########
 if __name__ == "__main__":
 	print("__name__ == '__main__'")
 	generate_all_summary_statistics()
+
+
 
 
 #

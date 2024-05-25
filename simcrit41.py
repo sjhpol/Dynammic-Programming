@@ -618,6 +618,9 @@ def FSquant(data, wgts, quants, checktie):
 	return qnts, cndmnum, qntype
 
 
+# TODO: Make one-run. Basically call the file, and then return the SMD-criterion.
+# Question: What is the SMD-criterion? - GMM
+
 # if __name__ == "__main__":
 # 	mvcode = -99
 # 	checktie = 1

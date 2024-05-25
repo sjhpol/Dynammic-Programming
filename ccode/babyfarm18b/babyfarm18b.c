@@ -8,6 +8,9 @@
     ~ create a folder called \output
 */ 
 
+// De magiske ord til Homebrew gcc Sonoma-compiler er, givet at du har en gcc-13 installation og ikke CLANG, 
+// gcc-13 -fopenmp -o babyfarm18b babyfarm18b.c
+
 #include <stdlib.h>
 #include <math.h>
 #include <stdio.h>
@@ -672,22 +675,22 @@ int main(int argc, char *argv[])
                    NKratsimsMtx, cashsimsMtx, IRsimsMtx, debtsimsMtx, NWsimsMtx, fracRepaidsimsMtx,
                    outputsimsMtx, liqDecsimsMtx, agesimsMtx, expensesimsMtx);
       }
-      writeGMatrixToFile(strcat(strcpy(fullpath, rootdir), "FEindxS.fmt"), &FEIsimsPtr);
-      writeGMatrixToFile(strcat(strcpy(fullpath, rootdir), "ZValsS.fmt"), &ZsimsPtr);
-      writeGMatrixToFile(strcat(strcpy(fullpath, rootdir), "ZindxS.fmt"), &ZIsimsPtr);
-      writeGMatrixToFile(strcat(strcpy(fullpath, rootdir), "assetsS.fmt"), &asstsimsPtr);
-      writeGMatrixToFile(strcat(strcpy(fullpath, rootdir), "debtS.fmt"), &debtsimsPtr);
-      writeGMatrixToFile(strcat(strcpy(fullpath, rootdir), "fracRPS.fmt"), &fracRepaidsimsPtr);
-      writeGMatrixToFile(strcat(strcpy(fullpath, rootdir), "liqDecS.fmt"), &liqDecsimsPtr);
-      writeGMatrixToFile(strcat(strcpy(fullpath, rootdir), "ageS.fmt"), &agesimsPtr);
-      writeGMatrixToFile(strcat(strcpy(fullpath, rootdir), "divsS.fmt"), &dividendsimsPtr);
-      writeGMatrixToFile(strcat(strcpy(fullpath, rootdir), "totKS.fmt"), &totKsimsPtr);
-      writeGMatrixToFile(strcat(strcpy(fullpath, rootdir), "NKratioS.fmt"), &NKratsimsPtr);
-      writeGMatrixToFile(strcat(strcpy(fullpath, rootdir), "cashS.fmt"), &cashsimsPtr);
-      writeGMatrixToFile(strcat(strcpy(fullpath, rootdir), "intRateS.fmt"), &IRsimsPtr);
-      writeGMatrixToFile(strcat(strcpy(fullpath, rootdir), "equityS.fmt"), &NWsimsPtr);
-      writeGMatrixToFile(strcat(strcpy(fullpath, rootdir), "outputS.fmt"), &outputsimsPtr);
-      writeGMatrixToFile(strcat(strcpy(fullpath, rootdir), "expenseS.fmt"), &expensesimsPtr);
+      writeGMatrixToFile(strcat(strcpy(fullpath, rootdir), "FEindxS.txt"), &FEIsimsPtr);
+      writeGMatrixToFile(strcat(strcpy(fullpath, rootdir), "ZValsS.txt"), &ZsimsPtr);
+      writeGMatrixToFile(strcat(strcpy(fullpath, rootdir), "ZindxS.txt"), &ZIsimsPtr);
+      writeGMatrixToFile(strcat(strcpy(fullpath, rootdir), "assetsS.txt"), &asstsimsPtr);
+      writeGMatrixToFile(strcat(strcpy(fullpath, rootdir), "debtS.txt"), &debtsimsPtr);
+      writeGMatrixToFile(strcat(strcpy(fullpath, rootdir), "fracRPS.txt"), &fracRepaidsimsPtr);
+      writeGMatrixToFile(strcat(strcpy(fullpath, rootdir), "liqDecS.txt"), &liqDecsimsPtr);
+      writeGMatrixToFile(strcat(strcpy(fullpath, rootdir), "ageS.txt"), &agesimsPtr);
+      writeGMatrixToFile(strcat(strcpy(fullpath, rootdir), "divsS.txt"), &dividendsimsPtr);
+      writeGMatrixToFile(strcat(strcpy(fullpath, rootdir), "totKS.txt"), &totKsimsPtr);
+      writeGMatrixToFile(strcat(strcpy(fullpath, rootdir), "NKratioS.txt"), &NKratsimsPtr);
+      writeGMatrixToFile(strcat(strcpy(fullpath, rootdir), "cashS.txt"), &cashsimsPtr);
+      writeGMatrixToFile(strcat(strcpy(fullpath, rootdir), "intRateS.txt"), &IRsimsPtr);
+      writeGMatrixToFile(strcat(strcpy(fullpath, rootdir), "equityS.txt"), &NWsimsPtr);
+      writeGMatrixToFile(strcat(strcpy(fullpath, rootdir), "outputS.txt"), &outputsimsPtr);
+      writeGMatrixToFile(strcat(strcpy(fullpath, rootdir), "expenseS.txt"), &expensesimsPtr);
 
       end = clock();
       printf("Finished simulations in %5d minutes %5d seconds \n ", (end-start)/CLOCKS_PER_SEC/60,
@@ -697,7 +700,7 @@ int main(int argc, char *argv[])
       fclose(timeStamp); //didn't open unless printOn==1.
    }
 
-   if (errorPrintOn==1) fclose(errorOutput); //didn't open unless errorprintOn==1
+if (errorPrintOn==1) fclose(errorOutput);    //didn't open unless errorprintOn==1
 
    return 0;
 }   /* End of main*/

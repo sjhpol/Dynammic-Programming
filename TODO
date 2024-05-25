@@ -1,0 +1,19 @@
+# Mindre todo-liste med diverse ting i, når jeg ikke ved, hvad jeg skal tage mig til 
+
+- Lav en gcc compilation af babyfarm18b.c der funger til Windows. 
+-- Optionelt lir: Lav noget der automatisk detekter, hvilken platform du kører på, og så kalder de rigtige flag
+--- (tror det ville være relativt ligetil i Python)
+
+- Find ud af, hvilke elementer der skal i summary statistics
+-- Pop den i Overleaf, og modificer lidt, så det ser godt ud
+-- Skriv valgene ned. Altid godt
+
+- Lav nogen goodness of fit-grafer (✔️)
+-- Start med kapital. Virker simpelt nok. 
+-- Lav dem for flere variable
+
+- Skrev mere teori ind i Overleaf.
+-- Bl.a. tag udgangspunkt i økonometrisk strategi fra online appendix
+-- Skriv ud hvordan financial bargaining faktisk fungerer
+
+- Begynd at tænke på, hvad vi ellers skal skrive om selve empirien; motivation, konklusion osv. 
