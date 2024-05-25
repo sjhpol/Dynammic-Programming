@@ -857,7 +857,7 @@ def load_file(filename, subdir="iofiles", ndmin=1):
 
 
 # we use parmvec here to avoid problems of indeterminate scope 
-
+# Det her er det mest komplicerede modelarbejde jeg nogensinde har lavet på studiet. 
 def loadSims(parmvec, subdir="iofiles"):
 	"""
 	This function is run after onerun(.), and transform our outputs to outputs, that we can graph. 
