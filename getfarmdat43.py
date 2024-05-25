@@ -1,13 +1,14 @@
 import numpy as np
 import os
+from pathlib import Path
 
 import pandas as pd
 from scipy.stats import norm
 
-from simcrit41 import getchrt, getcorrs, getqunts, tauch, FSquant
+from simcrit41 import getchrt, getcorrs, getqunts, tauch, FSquant, makepvecs
 from markch import markch
 from variables import *
-
+#from babyfarm42b_cash import parmvec
 import matplotlib.pyplot as plt
 
 
@@ -730,10 +731,11 @@ def dataprofs(FType, farmsize, FSstate, timespan, datawgts, checktie, chrttype, 
 	countadj = np.ones((chrtnum, FSgroups))  # Adjust moments for cell counts
 	if wgtdmmts == 1:
 		if wgtddata == 0:
-			# Need to redefine FSwgts to use herd size weights
-			datapath = r"C:\Users\Simon\Downloads\Jones_Pratap_AER_2017-0370_Archive\Jones_Pratap_AER_2017-0370_Archive\estimation_fake\data\Full_Sample"
-			datstr = os.path.join(datapath, "fake_weights.txt")
-			FSwgts = np.loadtxt(datstr, ndmin=2)
+			# TODO: Need to redefine FSwgts to use herd size weights
+			# I think there might be some problems maintaining cross-platform compatibility if we go 2 directories deep.
+			# move all of /data/Full_sample/ to just /data/?
+			
+			FSwgts = load_file("fake_weights.txt", subdir="data/Full_sample", ndmin=2)
 			FSwgts = FSwgts * (FSwgts > -99)
 			FSwgts = obsmat * FSwgts
 			FSwgts = np.mean(FSwgts, axis=1) / np.mean(obsmat, axis=1)  # farm averages
@@ -784,6 +786,7 @@ def generate_all_summary_statistics():
 	print("\\headrow{Variable & Mean & Median & Std. Dev. & Max & Min} \\\\")
 
 	# TODO: Implement periode-kode, som angiver, hvilken periode det er i. 
+	# Nemmere løsning: Vi opdeler dem på (år,værdi), og så snitter vi over værdi betinget på år (=0)
 
 	summary_statistic_dictionary = {
 								"Family size": famsize,
@@ -828,13 +831,208 @@ def return_individual_sum_stats(statistic, mvcode=-99):
 
     return np.array((mean, median, std, min, max))
 
-def load_simulations():
-	pass
+def load_file(filename, subdir="iofiles", ndmin=1):
+  """Loads data from a file in a subdirectory into a NumPy array of floats.
+
+  Args:
+      filename (str, optional): The name of the data file.
+      subdir (str, optional): The name of the subdirectory containing the data. Defaults to "iofiles".
+
+  Returns:
+      A NumPy array containing the data from the file, or None if the file
+      is not found or an error occurs during loading.
+  """
+
+  # Construct the full path to the file
+  this_directory = os.path.dirname(__file__)
+  full_subdir = os.path.join(this_directory, subdir)
+  filepath = os.path.join(full_subdir, filename)
+  
+  try:
+    data = np.loadtxt(filepath, dtype=float)
+    return data
+  except FileNotFoundError:
+    print(f"Error: File '{filepath}' not found.")
+    return None
+
+# We need this badboy to make the criterion function. But it will take a while to make ...
+# we use parmvec here to avoid problems of indeterminate scope 
+
+def loadSims(parmvec, subdir="iofiles"):
+	magic_constant = 24 # TODO: Find out why this is
+	print("Loading simulations...")
+
+	# We need to load a series of files here.
+	ftype_sim = load_file("ftype_sim.txt", subdir) ### NOTE: GAUSS IS *NOT* CASE-sensitive. Learned that the annoying way
+	feshks = load_file("ftype_sim.txt", subdir)
+
+	# obsSim, iobsSim, dvgobsSim, FEshks, IDsim, simwgts
+
+	ageS 		= load_file("ageS.txt", subdir).reshape(timespan + 1, numsims+magic_constant).T
+	assetsS 	= load_file("assetsS.txt", subdir).reshape(timespan + 1, numsims+magic_constant).T
+	cashS  		= load_file("cashS.txt", subdir).reshape(timespan + 1, numsims+magic_constant).T
+	debtS       = load_file("debtS.txt", subdir).reshape(timespan + 1, numsims+magic_constant).T
+	divsS       = load_file("divsS.txt", subdir).reshape(timespan + 1, numsims+magic_constant).T
+	equityS     = load_file("equityS.txt", subdir).reshape(timespan + 1, numsims+magic_constant).T
+	expenseS    = load_file("expenseS.txt", subdir).reshape(timespan + 1, numsims+magic_constant).T
+	fracRPS     = load_file("fracRPS.txt", subdir).reshape(timespan + 1, numsims+magic_constant).T
+	intRateS    = load_file("intRateS.txt", subdir).reshape(timespan + 1, numsims+magic_constant).T
+	liqDecS     = load_file("liqDecS.txt", subdir).reshape(timespan + 1, numsims+magic_constant).T
+	outputS     = load_file("outputS.txt", subdir).reshape(timespan + 1, numsims+magic_constant).T
+	totKS       = load_file("totKS.txt", subdir).reshape(timespan + 1, numsims+magic_constant).T
+	ZvalsS      = load_file("ZvalS.txt", subdir).reshape(timespan + 1, numsims+magic_constant).T
+
+	ageSim = ageS[:, :timespan]  # All rows, columns 0 to timespan-1 (inclusive)
+	assetSim = assetsS[:, :timespan] + 1e-10  # Add small value to avoid division by zero
+	cashSim = cashS[:, cashlag:timespan+cashlag]  # Shift by cashlag periods
+	debtSim = debtS[:, :timespan]  # All rows, columns 0 to timespan-1 (inclusive)
+	equitySim = equityS[:, :timespan]  # All rows, columns 0 to timespan-1 (inclusive)
+	expenseSim = expenseS[:, :timespan]  # All rows, columns 0 to timespan-1 (inclusive)
+	fracRPSim = fracRPS[:, :timespan]  # All rows, columns 0 to timespan-1 (inclusive)
+	intRateSim = intRateS[:, :timespan]  # All rows, columns 0 to timespan-1 (inclusive)
+	outputSim = outputS[:, :timespan]  # All rows, columns 0 to timespan-1 (inclusive)
+	ZvalSim = ZvalsS[:, tfplag:timespan+tfplag]  # Shift by tfplag periods	
+
+	prefparms, finparms,gam, ag2, nshft, fcost = makepvecs(parmvec)
+
+	hetag2 = ag2[ftype_sim]
+	hetgam = gam[ftype_sim]
+	alp = 1 - hetag2 - hetgam
+
+	(TFPaggshks, TFP_FE, TFPaggeffs, tkqntdat, DAqntdat, CAqntdat, nkqntdat, gikqntdat, 
+  	 ykqntdat, divqntdat, dvgqntdat, obsavgdat, tkqcnts, divqcnts, dvgqcnts, std_zi, zvec, 
+	 fevec, k_0, optNK, optKdat, countadj) = datasetup(gam,ag2,nshft,fcost)
+
+	# Calculate optimal capital stock
+	optKSim = (k_0 * np.exp(feshks))**(1.0 / alp)
+
+	# Dividend calculations with lag
+	divSim = divsS[:, 1+divlag:timespan+divlag]
+
+	# Fixed dividend logic
+	fixeddiv = np.abs(divSim[:, 1:timespan-1]) > divbasemin  # Logical comparison for fixed dividends
+	divsign = 1 - 2 * (divSim[:, 1:timespan-1] < 0)  # Sign of dividends
+
+	# Fixed dividend calculation with minimum threshold
+	fixeddiv = divSim[:, 1:timespan-1] * fixeddiv + divbasemin * (1 - fixeddiv) * divsign
+
+	# Dividend growth calculation (assuming dvgSim is desired output)
+	dvgSim = divSim[:, 2:timespan] / fixeddiv  # Growth rate (avoid division by zero)
+	dvgSim = np.zeros((numsims, 1))  # Assuming you want to initialize dvgSim to zeros
+	dvgSim[:-1] = dvgSim[1:]  # Copy growth rates (excluding the first element)
+
+	# Equity injection calculations
+	eqinjSim = divSim.copy()  # Copy dividend for equity injection
+	goteqiSim = eqinjSim > 0  # Logical comparison for positive equity injection
 
 def comparison_graph(simulated_series, real_series):
 	# Given a time series of simulated and real data, where the x-axis is age, 
 	# and the y-axis is given by the input, output two graphs
 	pass
+
+
+# We need the data-setup function ...
+
+def datasetup(gam, ag2, nshft, fcost):
+	# Generate a bunch of variables that we need!!
+
+
+	# We need access to these variables so that we can calculate TFP next line (first 4 arguments)
+	(IDs, owncap, obsmat, lsdcap, totcap, LTKratio, totasst, totliab, equity, cash,
+			CAratio, debtasst, intgoods, nkratio, rloutput, ykratio, cashflow, dividends,
+			divgrowth, dvgobsmat, DVKratio, DVFEratio, eqinject, goteqinj, grossinv, gikratio,
+			netinv, nikratio, iobsmat, age_2001, init_yr, init_age, av_cows, famsize, cohorts,
+			chrttype, milktype, herdtype, farmtype, avgage, datawgts, initstate) = loaddat(timespan, np.array([1, 0]), 1, chrtnum, chrtstep, sizescreen, wgtddata) # du skal ikke spørge hvorfor
+
+	TFPaggshks,std_zi,std_fe,TFP_FE,std_za,TFPaggeffs = getTFP(rloutput,totcap,intgoods,obsmat,gam,ag2,nshft,fcost,statacrap,yrseq,firstyr,farmtype)
+
+	if sizevar==1:
+		farmsize = TFP_FE		# Jones says: Global. What does it mean?
+	elif sizevar==2:
+		farmsize = av_cows/famsize
+
+	std_z     = np.sqrt(std_zi**2+std_za**2);        # @ Std deviation of TFP shock @
+	if zdim==1:                               # @ no transitory uncertainty @
+		TFP_FE     = TFP_FE + (std_z**2)/2
+		zvals      = 0
+		zpmtx      = 1
+		std_zi     = 0
+		TFPaggshks = 0*TFPaggshks
+		std_z      = 0
+	else:
+		zpmtx, zvals, intvals = tauch(std_z,rho_z,zdim,cutoff_z,cutoff_z) # tauch?
+
+	if zdim>1:
+		zpmtx[:,zdim] = np.ones((zdim,1))-np.sum(zpmtx[:,1:zdim-1].T, 0)	
+    	
+	print("Transitory shocks:")
+
+	if (prnres>1) and (zdim>1):
+		j1, j2, j3, j4, j5, j6 = markch(zpmtx, zvals)
+	else:
+		print(zvals)			# I think this is right?
+
+	zvals = np.exp(zvals)
+
+    # zvec      = zdim|rho_z|std_z|zvals|vecr(zpmtx)
+	# maybe rhoz, std_z need to be np.array(rho_z), np.array(std_z)
+	zvec = np.concatenate((zdim, rho_z, std_z, zvals, np.vectorize(lambda x: x.flatten())(zpmtx)))
+
+	# Assuming tauch is a function that generates persistent shocks
+
+	# Generate persistent shocks using tauch
+	fepmtx, fevals, intvals = tauch(std_fe, 0.0, fedim, cutoff_fe, cutoff_fe)
+
+	# Extract transition probabilities
+	feprobs = fepmtx[1, :].T  # Assuming row 1 contains transition probabilities
+
+	# Calculate average TFP level
+	mean_fe = np.mean(TFP_FE)
+
+	# Log-transform fevals and add mean for persistent deviations
+	fevals = np.exp(fevals + mean_fe)
+
+	# Combine variables into a vector
+	# I'm a little uncertain about the dimensions here, but let's look at that l8r 
+	fevec = np.concatenate((fedim, [0], [std_fe], fevals, feprobs))
+
+	print("Persistent Shocks:")
+	print("Levels:", fevals)
+	print("Logs :", np.log(fevals))
+
+	# Assuming ag2, gam, rdgE, std_z, TFP_FE are already NumPy arrays
+
+	# Extract data based on farm type
+	hetag2 = ag2[farmtype]
+	hetgam = gam[farmtype]
+
+	# Calculate parameters
+	alp = 1 - hetag2 - hetgam
+	optNK = rdgE * hetag2 / hetgam  # Element-wise division
+
+	# Calculate initial capital stock
+	k_0 = ((hetgam / rdgE) ** (1 - hetag2)) * (hetag2**hetag2) * np.exp(std_z**2 / 2)
+
+	# Calculate optimal capital stock
+	optKdat = (k_0 * np.exp(TFP_FE))**(1.0 / alp)
+
+	# Farm type sorting logic
+	if GMMsort == 0:
+		profsort = 0  # No sorting for GMM
+	else:
+		profsort = farmtype  # Use farm type for sorting
+
+	# beautiful
+	(tkqntdat, DAqntdat, CAqntdat, nkqntdat, gikqntdat, ykqntdat, divqntdat, dvgqntdat, 
+     obsavgdat, tkqcnts, divqcnts, dvgqcnts, countadj) = dataprofs(profsort, farmsize, 
+				FSstate, timespan, datawgts, checktie, chrttype,  
+				obsmat, iobsmat, dvgobsmat, quants_lv, quants_rt, timespan, totcap, 
+                dividends, divgrowth, LTKratio, debtasst, nkratio, gikratio, CAratio, 
+                ykratio)
+    
+	return (TFPaggshks, TFP_FE, TFPaggeffs, tkqntdat, DAqntdat, CAqntdat, nkqntdat, gikqntdat, 
+   			  ykqntdat, divqntdat, dvgqntdat, obsavgdat, tkqcnts, divqcnts, dvgqcnts, std_zi, zvec, 
+     		  fevec, k_0, optNK, optKdat, countadj)
 
 
 
@@ -843,6 +1041,8 @@ def comparison_graph(simulated_series, real_series):
 if __name__ == "__main__":
 	print("__name__ == '__main__'")
 	generate_all_summary_statistics()
+
+	load_all_simulations()
 
 
 
