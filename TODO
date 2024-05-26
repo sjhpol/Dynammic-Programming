@@ -2,15 +2,15 @@
 
 - Lav en gcc compilation af babyfarm18b.c der funger til Windows. 
 -- Optionelt lir: Lav noget der automatisk detekter, hvilken platform du kører på, og så kalder de rigtige flag
---- (tror det ville være relativt ligetil i Python)
+--- (tror det ville være relativt ligetil i Python vha. 'import os')
 
 - Find ud af, hvilke elementer der skal i summary statistics
 -- Pop den i Overleaf, og modificer lidt, så det ser godt ud
--- Skriv valgene ned. Altid godt
+-- Skriv valgene ned.
 
-- Lav nogen goodness of fit-grafer (✔️)
--- Start med kapital. Virker simpelt nok. 
---- Det var det ikke. Kræver en del opsætning i getfarmdat43
+- Lav nogen goodness of fit-grafer
+-- Start med kapital. 
+--- Kræver en del opsætning i getfarmdat43
 -- Lav dem for flere variable
 
 - Skrev mere teori ind i Overleaf.
@@ -18,3 +18,5 @@
 -- Skriv ud hvordan financial bargaining faktisk fungerer
 
 - Begynd at tænke på, hvad vi ellers skal skrive om selve empirien; motivation, konklusion osv. 
+
+- Arbejd mod at få en fungerende 'onerun'-fkt. 
