@@ -539,7 +539,7 @@ def FEReg(YvarMtx, obsmat_y, XvarMtx, timeseq, statacrap):
 
 	nfarms = len(YvarMtx)
 	obsvec_y = obsmat_y.flatten()
-	y_ucmean = np.mean(YvarMtx.flatten()[obsvec_y.astype(bool)])
+	y_ucmean = np.mean(YvarMtx.flatten()[obsvec_y.astype(bool)], axis=0)
 	Y_dm, YFE = removeFE(YvarMtx, obsmat_y)
 	Yvec = Y_dm.flatten()[obsvec_y.astype(bool)]
 
@@ -548,7 +548,7 @@ def FEReg(YvarMtx, obsmat_y, XvarMtx, timeseq, statacrap):
 	tn = len(timeseq)
 	timedums = const
 	XmatFE = np.ones(nfarms)
-	td_ucmean = np.mean(const)
+	td_ucmean = np.mean(const, axis=0)
 
 	if tn > 1:
 		timemtx = np.ones((numfarms, 1)) * timeseq
@@ -558,7 +558,7 @@ def FEReg(YvarMtx, obsmat_y, XvarMtx, timeseq, statacrap):
 
 		iYr = 0
 		tdtemp = (timemtx == timeseq[iYr])
-		td_ucmean.append(np.mean(tdtemp.flatten()[obsvec_y.astype(bool)]))
+		td_ucmean.append(np.mean(tdtemp.flatten()[obsvec_y.astype(bool)], axis=0))
 		td_dm, tdFE = removeFE(tdtemp, obsmat_y)
 		tdtemp = td_dm.flatten()[obsvec_y.astype(bool)]
 		timedums = tdtemp
@@ -566,7 +566,7 @@ def FEReg(YvarMtx, obsmat_y, XvarMtx, timeseq, statacrap):
 
 		for iYr in range(1, tn):
 			tdtemp = (timemtx == timeseq[iYr])
-			td_ucmean.append(np.mean(tdtemp.flatten()[obsvec_y.astype(bool)]))
+			td_ucmean.append(np.mean(tdtemp.flatten()[obsvec_y.astype(bool)], axis=0))
 			td_dm, tdFE = removeFE(tdtemp, obsmat_y)
 			tdtemp = td_dm.flatten()[obsvec_y.astype(bool)]
 			timedums = np.column_stack([timedums, tdtemp])
@@ -584,7 +584,7 @@ def FEReg(YvarMtx, obsmat_y, XvarMtx, timeseq, statacrap):
 		x_ucmean = []
 		for iX in range(nX):
 			Xtemp = XvarMtx[iX * nfarms: (iX + 1) * nfarms, :]
-			x_ucmean.append(np.mean(Xtemp[obsvec_y]))
+			x_ucmean.append(np.mean(Xtemp[obsvec_y], axis=0))
 			X_dm, XFE = removeFE(Xtemp, obsmat_y)
 			Xtemp = X_dm[obsvec_y]
 			Xmat = np.concatenate((Xmat, Xtemp), axis=1)
@@ -611,10 +611,10 @@ def FEReg(YvarMtx, obsmat_y, XvarMtx, timeseq, statacrap):
 	if tn > 1:
 		if statacrap == 0:
 			coeffs[1:tn] = coeffs[1:tn] + coeffs[0]
-		coeffs[:tn] = coeffs[:tn] - np.mean(coeffs[:tn])
+		coeffs[:tn] = coeffs[:tn] - np.mean(coeffs[:tn], axis=0)
 
 	std_FE = np.std(muFE)
-	muFE = muFE + y_ucmean - x_ucmean @ coeffs - np.mean(muFE)
+	muFE = muFE + y_ucmean - x_ucmean @ coeffs - np.mean(muFE, axis=0)
 
 	meanadj = ((1 - aggshkscl) * np.std(coeffs)) ** 2 + ((1 - idioshkscl) * std_eps) ** 2
 	muFE = muFE + meanadj / 2
@@ -866,14 +866,19 @@ def loadSims(parmvec, subdir="iofiles"):
 	
 	magic_constant = 24 # TODO: Find out why this is
 	print("Loading simulations...")
+	
+	# THIS STUFF IS SPAT OUT BY (initdist). A future version may these directly.
+	# For debugging purposes its advantageous to use the real data, however
+	# I have no *€%&% clue what the shape of these vectors is lol. 
+	obsSim = load_file("obssim.txt", subdir)
+	iobsSim = load_file("iobsSim.txt", subdir)
+	dvgobsSim = load_file("dvgobsSim.txt", subdir)
+	feshks = load_file("feshks.txt", subdir)
+	IDSim = load_file("IDsim.txt", subdir)
+	simwgts = load_file("simwgts.txt", subdir)
+	ftype_sim = load_file("ftype_sim.txt", subdir)	
 
-	# We need to load a series of files here.
-	ftype_sim = load_file("ftype_sim.txt", subdir) ### NOTE: GAUSS IS *NOT* CASE-sensitive. Learned that the annoying way
-	feshks = load_file("ftype_sim.txt", subdir)
-	# GRRRR we need to run initdist to get these files.
-	#obsSim = load_file("obs")
-	# obsSim, iobsSim, dvgobsSim, FEshks, IDsim, simwgts
-
+	## THIS IS ALL THE STUFF THAT COMES FROM THE SIMULATIONS
 	ageS 		= load_file("ageS.txt", subdir).reshape(timespan + 1, numsims+magic_constant).T
 	assetsS 	= load_file("assetsS.txt", subdir).reshape(timespan + 1, numsims+magic_constant).T
 	cashS  		= load_file("cashS.txt", subdir).reshape(timespan + 1, numsims+magic_constant).T
@@ -971,7 +976,7 @@ def loadSims(parmvec, subdir="iofiles"):
 	aliveSim = aliveSim[:, 1:timespan]
 
 	# Exit errors (based on observed exit and simulated exit)
-	exiterrs = (alivesim == 0) * obsSim  # Element-wise multiplication
+	exiterrs = (aliveSim == 0) * obsSim  # Element-wise multiplication
 
 	# Any exit errors in the simulation
 	gotxerrs = (exiterrs * np.ones((timespan, 1)) > 0).any(axis=0)  # Check if any errors exist in any simulation
@@ -1011,6 +1016,58 @@ def loadSims(parmvec, subdir="iofiles"):
 
 	# Cash-value product of alive firms
 	CAaliveSim = cshaliveSim * aliveSim  # Element-wise multiplication
+
+	# NY DAG NY KODE!!!
+	# Debt-to-asset ratio (missing values set to -1)
+	DAratioSim = ((debtSim / assetSim) + 1) * aliveSim - 1
+	DAratioSim[np.isnan(DAratioSim)] = -1  # Explicitly set NaN to -1
+
+	# Cash-to-asset ratio (missing values set to -1)
+	CAratioSim = ((cashSim / assetSim) + 1) * CAaliveSim - 1
+	CAratioSim[np.isnan(CAratioSim)] = -1
+
+	# Expense-to-capital ratio (missing values set to -1)
+	NKratioSim = ((expenseSim / totKSim) + 1) * aliveSim - 1
+	NKratioSim[np.isnan(NKratioSim)] = -1
+
+	# Output-to-capital ratio (missing values set to -1)
+	YKratioSim = ((outputSim / totKSim) + 1) * aliveSim - 1
+	YKratioSim[np.isnan(YKratioSim)] = -1
+
+	# Net investment-to-capital ratio (missing values set to -1)
+	NIKratioSim = ((NInvSim / totKSim) + 1) * ialiveSim - 1
+	NIKratioSim[np.isnan(NIKratioSim)] = -1
+
+	# Gross investment-to-capital ratio (missing values set to -1)
+	GIKratioSim = ((GInvSim / totKSim) + 1) * ialiveSim - 1
+	GIKratioSim[np.isnan(GIKratioSim)] = -1
+
+	# Debt-value-to-capital ratio (missing values set to -1)
+	DVKratioSim = ((divSim / totKSim) + 1) * DVKalivesim - 1
+	DVKratioSim[np.isnan(DVKratioSim)] = -1
+
+	# Assuming abs is a built-in function, simwgts is already defined
+
+	# Remove financial effects (potentially a custom function)
+	DVFEratioSim, DVFESim = removeFE(np.abs(divSim), divaliveSim)
+
+	# Debt-to-financial equity ratio (adjusted for missing values)
+	DVFEratioSim = (divSim / DVFESim + 1) * aliveSim - 1
+	DVFEratioSim[np.isnan(DVFEratioSim)] = -1  # Explicitly set NaN to -1
+
+	# Alive firms with weights
+	alivesim2 = aliveSim * simwgts  # Element-wise multiplication
+	ialivesim2 = ialiveSim * simwgts  # Element-wise multiplication
+	CAalivesim2 = CAaliveSim * simwgts  # Element-wise multiplication
+	cshalivesim2 = cshaliveSim * simwgts  # Element-wise multiplication
+	divalivesim2 = divaliveSim * simwgts  # Element-wise multiplication
+
+	# Average values weighted by simwgts
+	aliveavg = np.mean(alivesim2)
+	ialiveavg = np.mean(ialivesim2)
+	CAaliveavg = np.mean(CAalivesim2)
+	cshaliveavg = np.mean(cshalivesim2)
+	divaliveavg = np.mean(divalivesim2)
 
 
 
@@ -1076,7 +1133,7 @@ def datasetup(gam, ag2, nshft, fcost):
 	feprobs = fepmtx[1, :].T  # Assuming row 1 contains transition probabilities
 
 	# Calculate average TFP level
-	mean_fe = np.mean(TFP_FE)
+	mean_fe = np.mean(TFP_FE, axis=0)
 
 	# Log-transform fevals and add mean for persistent deviations
 	fevals = np.exp(fevals + mean_fe)
