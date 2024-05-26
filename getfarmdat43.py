@@ -855,9 +855,13 @@ def load_file(filename, subdir="iofiles", ndmin=1):
     print(f"Error: File '{filepath}' not found.")
     return None
 
+def weighted_mean(data, weights, alive_indicator):
+  # Avoid division by zero for aliveavg or potential NaN in data or weights
+  if alive_indicator == 0 or np.any(np.isnan(data)) or np.any(np.isnan(weights)):
+    return np.nan
+  else:
+    return np.mean(data * weights) / alive_indicator
 
-# we use parmvec here to avoid problems of indeterminate scope 
-# Det her er det mest komplicerede modelarbejde jeg nogensinde har lavet på studiet. 
 def loadSims(parmvec, subdir="iofiles"):
 	"""
 	This function is run after onerun(.), and transform our outputs to outputs, that we can graph. 
@@ -867,7 +871,8 @@ def loadSims(parmvec, subdir="iofiles"):
 	magic_constant = 24 # TODO: Find out why this is
 	print("Loading simulations...")
 	
-	# THIS STUFF IS SPAT OUT BY (initdist). A future version may these directly.
+	# THIS STUFF IS SPAT OUT BY (initdist). A future version may take in these directly.
+	# Åbent spørgsmål, hvordan man bedst får parmvec ind i denne. 
 	# For debugging purposes its advantageous to use the real data, however
 	# I have no *€%&% clue what the shape of these vectors is lol. 
 	obsSim = load_file("obssim.txt", subdir)
@@ -1069,16 +1074,59 @@ def loadSims(parmvec, subdir="iofiles"):
 	cshaliveavg = np.mean(cshalivesim2)
 	divaliveavg = np.mean(divalivesim2)
 
+	"""
+	Kæmpe show her om simavg. Tror kun, det bliver brugt som output, så ikke så vigtigt. Har det mest med
+	for sjov. Hvis det ikke virker, comment det ud 
+	"""
+	simavg = np.concatenate(
+    weighted_mean(ZvalSim * alivesim2, aliveavg),
+    weighted_mean(assetSim * alivesim2, aliveavg) / CAaliveavg,  # Use CAaliveavg here
+    weighted_mean(DAratioSim * alivesim2, aliveavg) / aliveavg,
+    weighted_mean(CAratioSim * CAalivesim2, CAaliveavg) / CAaliveavg,  # Use CAaliveavg here
+    weighted_mean(totKSim * alivesim2, aliveavg) / aliveavg,
+    weighted_mean(NKratioSim * alivesim2, aliveavg) / aliveavg,
+    weighted_mean(YKratioSim * alivesim2, aliveavg) / aliveavg,
+    weighted_mean(NIKratioSim * ialivesim2, ialiveavg) / ialiveavg,
+    weighted_mean(GIKratioSim * ialivesim2, ialiveavg) / ialiveavg
+)
 
+	# Use weighted exit errors (don't multiply with alivesim)
+	simavg = np.concatenate(simavg, np.mean(exiterrs * simwgts) / aliveavg)
 
+	# Assuming firstyr, timespan, exiterrs, aliveavg, CAaliveavg, ialiveavg, simavg are already defined
+	print("       Year   frac alive     TFP shks       Assets  Debt/Assets  Cash/Assets     Capital   igoods/K")
+	print("       Y/K    Net Inv/K    Gross I/K     Exit Errs")
+
+	# Sequence of years
+	years = np.arange(firstyr, timespan + 1)
+
+	# Average exit errors (excluding NaN values)
+	avxerr = np.nanmean(exiterrs) / aliveavg / np.sum(aliveavg)  # Consider NaN handling
+
+	# Standardized averages (weighted by aliveavg or CAaliveavg)
+	saa = np.empty((11,))  # Pre-allocate empty array for standardized averages
+
+	saa[0:3] = (aliveavg * simavg[:, 0:3] / np.sum(aliveavg))  # Fraction alive, TFP, Assets
+	saa[3] = (CAaliveavg * simavg[:, 3] / np.sum(CAaliveavg))  # Debt/Assets (use CAaliveavg)
+	saa[4:8] = (aliveavg * simavg[:, 4:8] / np.sum(aliveavg))  # Cash/Assets, Capital, igoods/K
+	saa[8:10] = (ialiveavg * simavg[:, 8:10] / np.sum(ialiveavg))  # Y/K, Net Inv/K
+	saa[10] = (aliveavg * simavg[:, 10] / np.sum(aliveavg))  # Gross I/K
+
+	# Print results
+	print(" All years ", saa)
+
+	# now return this big ol' mess
+	return (ageSim, assetSim, cashSim, debtSim, divSim, dvgSim, eqinjSim, goteqiSim,
+                      equitySim, expenseSim, fracRPSim, intRateSim, liqDecSim, NKratioSim, 
+                      outputSim, totKSim, ZvalSim, aliveSim, ialiveSim, dvgaliveSim, 
+                      fwdalivesim, divaliveSim, DVKalivesim, cshaliveSim, CAaliveSim, exiterrs, 
+                      deprSim, NInvSim, GInvSim, DAratioSim, CAratioSim, YKratioSim, NIKratioSim, 
+                      GIKratioSim, DVKratioSim, DVKratioSim, profitSim, netWorthSim, avxerr)
 
 def comparison_graph(simulated_series, real_series):
 	# Given a time series of simulated and real data, where the x-axis is age, 
 	# and the y-axis is given by the input, output two graphs
 	pass
-
-
-
 
 def datasetup(gam, ag2, nshft, fcost):
 	# Generate a bunch of variables that we need!!
@@ -1180,7 +1228,69 @@ def datasetup(gam, ag2, nshft, fcost):
    			  ykqntdat, divqntdat, dvgqntdat, obsavgdat, tkqcnts, divqcnts, dvgqcnts, std_zi, zvec, 
      		  fevec, k_0, optNK, optKdat, countadj)
 
+# any guesses on what this abbreviation means?
+# Simulation prophecies? Anyways returns some sorted arrays.
+# Note that we add obsmat to the end of the signature here
+def simprofs(FType, timespan, FSstate, checktie, farmsize, cht_sim,
+          aliveSim, ialiveSim, dvgaliveSim, divaliveSim, CAalivesim,
+          totKSim, divSim, dvgSim, DAratioSim, NKratioSim, GIKratioSim,
+          CAratioSim, YKratioSim, simwgts, prngrph, obsmat):
+	"""
+	Returns arrays sorted by farm-size and calls some graph making function. 
+	We blur out the graph making function for now. 
+	Note: we add obsmat
+	"""
+	dumswgts = np.ones((numsims, timespan))
 
+	FSwgts = aliveSim * simwgts
+	FSwgts = np.mean(FSwgts, axis=1) / np.mean(aliveSim, axis=1)  # Farm-level averages. 
+	# column averages of transposed vectors => axis=1, I think
+
+	# Sorting by farm size (if number of farms exceeds observations)
+	sorttype = 0
+	if obsmat.shape[0] < farmsize.shape[0]:  # Check rows instead of explicit rows() function
+		sorttype = sizevar # 1 or 2. sort by TFP (productivity) vs cows (gross size)
+
+		if np.max(FSstate) > 0:  # Check if there are state variables
+			FSgroups = farmsize.shape[0] + 1  # Number of farm groups (including potential extra group)
+
+			if wgtdsplit == 0:  # Use dummy weights if not using weighted split
+				# check these dummy weights
+				FSqnts, FScounts, FType = FSquant(farmsize, dumswgts[:,0], FSstate, checktie)
+			else:
+				FSqnts, FScounts, FType = FSquant(farmsize, FSwgts, FSstate, checktie)
+		else:
+			FSgroups = 1  # Single group if no state variables
+			FType = np.ones((farmsize.shape[0], 1))  # All farms have type 1 (assuming)
+	else:
+		FSgroups = np.unique(FType, axis=0).shape[0]  # Number of unique firm types (groups)
+
+	# Get quantiles for various variables with alive firm indicators
+	tkqntsim, quantcnts = getqunts(cht_sim, FType, totKSim, aliveSim, quants_lv, timespan, simwgts)  # Total capital
+	divqntsim, quantcnts = getqunts(cht_sim, FType, divSim, divaliveSim, quants_lv, timespan, simwgts)  # Debt
+
+	# Get quantiles for ratios with relevant alive firm indicators
+	DAqntsim, quantcnts = getqunts(cht_sim, FType, DAratioSim, aliveSim, quants_rt, timespan, simwgts)  # Debt-to-Asset
+	nkqntsim, quantcnts = getqunts(cht_sim, FType, NKratioSim, aliveSim, quants_rt, timespan, simwgts)  # Expense-to-Capital
+	gikqntsim, quantcnts = getqunts(cht_sim, FType, GIKratioSim, ialiveSim, quants_rt, timespan, simwgts)  # Gross Investment-to-Capital
+	CAqntsim, quantcnts = getqunts(cht_sim, FType, CAratioSim, CAalivesim, quants_rt, timespan, simwgts)  # Cash-to-Asset
+	ykqntsim, quantcnts = getqunts(cht_sim, FType, YKratioSim, aliveSim, quants_rt, timespan, simwgts)  # Output-to-Capital
+	dvgqntsim, quantcnts = getqunts(cht_sim, FType, dvgSim, dvgaliveSim, quants_rt, timespan, simwgts)  # Debt-to-Value (exiting)
+
+	# Get quantiles for observed average (using dummy weights)
+	obsavgsim, quantcnts = getqunts(cht_sim, FType, aliveSim, dumswgts, 0, timespan, simwgts)
+
+	"""
+	her nogle 
+	graphmtx (graph matrix)
+	+
+	makgrph2 (make graph 2)
+	"""
+
+	return tkqntsim, DAqntsim, nkqntsim, gikqntsim, CAqntsim, ykqntsim, divqntsim, dvgqntsim, obsavgsim
+
+
+# ... rest of your code ...
 
 
 ################   ENTRY POINT   ########
