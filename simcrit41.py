@@ -2,7 +2,7 @@ import numpy as np
 from variables import *
 from scipy.stats import norm
 from functions import logitrv, logit
-from getfarmdat43 import load_file
+from getfarmdat43 import load_file, datasetup, removeFE
 
 
 def getchrt(data, cohorts_j):
@@ -617,6 +617,12 @@ def FSquant(data, wgts, quants, checktie):
 
 	return qnts, cndmnum, qntype
 
+def weighted_mean(data, weights, alive_indicator):
+  # Avoid division by zero for aliveavg or potential NaN in data or weights
+  if alive_indicator == 0 or np.any(np.isnan(data)) or np.any(np.isnan(weights)):
+    return np.nan
+  else:
+    return np.mean(data * weights) / alive_indicator
 
 def loadSims(parmvec, subdir="iofiles"):
 	"""
