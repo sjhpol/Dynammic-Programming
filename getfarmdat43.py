@@ -702,10 +702,15 @@ def fbillvec(std_zi, std_za):
 
 	return zvals, zpmtx, zdim, zamin
 
-def datasetup(gam, ag2, nshft, fcost, rloutput, totcap, intgoods, obsmat, farmtype, av_cows, famsize):
+def datasetup(gam, ag2, nshft, fcost, rloutput, totcap, intgoods, obsmat, 
+			  farmtype, av_cows, famsize, datawgts, chrttype, iobsmat, dvgobsmat, 
+			  dividends, divgrowth, LTKratio, debtasst, nkratio, gikratio,
+			    CAratio, ykratio, dumdwgts):
 	# Local variables initialization
 	TFPaggshks, std_zi, std_fe, TFP_FE, std_za, TFPaggeffs = getTFP(rloutput, totcap, intgoods, obsmat, gam, ag2, nshft,
 																	fcost, statacrap, yrseq, firstyr, farmtype)
+
+	
 
 	# Determine farmsize based on sizevar
 	if sizevar == 1:
@@ -943,10 +948,273 @@ def comparison_graph(simulated_series, real_series):
 	# and the y-axis is given by the input, output two graphs
 	pass
 
+def grphmtx(dataprfs, vartype, datatype, quants_j, FSnum_j, chrtnum_j, numyrs_j, sorttype):
+	"""
+	WIP.
+	This function shapes the data how we want it. Core to making graphs. 
 
-# any guesses on what this abbreviation means?
-# Simulation prophecies? Anyways returns some sorted arrays.
-# Note that we add obsmat to the end of the signature here
+	Args:
+		dataprfs: (array-like) Data profiles (possibly from previous steps)
+		vartype: (str) Variable type (e.g., 'Y', 'D')
+		datatype: (str) Data type (e.g., 'L', 'C')
+		quants_j: (array-like) Quantiles (possibly from previous step)
+		FSnum_j: (int) Number of firms (or a related count)
+		chrtnum_j: (int) Chart number (for potential identification)
+		numyrs_j: (int) Number of years (relevant data period)
+		sorttype: (str) Sorting type for data (e.g., 'asc', 'desc')
+	"""
+	vartype_to_name = {
+	1: "totK",
+	2: "ownK",
+	3: "TA",
+	4: "D",
+	5: "IG",
+	6: "GI",
+	7: "NI",
+	8: "DV",
+	9: "Y",
+	10: "CF",
+	11: "LTK",
+	12: "DA",
+	13: "NK",
+	14: "GIK",
+	15: "NIK",
+	16: "CA",
+	17: "YK",
+	18: "DVG",
+	}
+
+	if vartype in vartype_to_name:
+		name1 = vartype_to_name[vartype]
+	else:
+		# Handle potential unknown vartype values
+		print(f"Warning: Unknown vartype value {vartype}")
+		name1 = "Unknown vartype"
+
+	datatype_to_suffix = {
+	0: "dt",  # Data
+	1: "sm",  # Simulation
+	}
+
+	if datatype in datatype_to_suffix:
+		name2 = datatype_to_suffix[datatype]
+	else:
+		# Handle potential unknown vartype values
+		print(f"Warning: Unknown datatype value {datatype}")
+		name2 = "Unknown datatype"
+
+
+	sorttype_to_suffix = {
+	0: "TS",  # Technology sort
+	1: "TFP",  # Farm size sort: TFP fixed effect
+	2: "HS",  # Farm size sort: herd size
+	3: "DA",  # Farm size sort: debt/asset ratio
+	}
+
+	if sorttype in sorttype_to_suffix:
+		name2 += sorttype_to_suffix[sorttype]
+	else:
+		# Handle potential unknown vartype values
+		print(f"Warning: Unknown sorttype value {sorttype}")
+		name2 += "Unknown sort"
+
+	if quants_j == 0:
+		iQunt = 1
+		qnum_j = quants_j.shape[0]  # Get number of rows (quantiles)
+	else:
+		iQunt = 0
+		qnum_j = 0  # Set number of quantiles to 0	
+
+	# Assuming avgage, minc, maxc, seqa, getorders are defined
+
+# Calculate age range
+	_tr2 = np.max(avgage, axis=0) - np.min(avgage, axis = 0) + numyrs_j + 5
+	age_seq2 = np.arange(minc(avgage) - 2, _tr2 + 1)  # Use numpy.arange for sequence
+
+	# Extract maturity years
+	mmtyrs = getorders(dataprfs)[4]  # Assuming getorders returns a list/array
+
+	# Create sequence of maturity years
+	mmtcols = np.arange(1, mmtyrs + 1)  # Use numpy.arange for sequence
+
+
+def makgrph2(quants_j, FSnum_j, chrtnum_j, grphtype, sorttype):
+	"""
+	This is the massive Goodness-of-fit plotting function. Its a wrapper for the settings 
+	for the 18 graphs that we can make. Very annoying. Uses input from grphmtx (graph matrix)
+
+	Args:
+	quants_j: (array-like) Quantiles (possibly from previous step)
+	FSnum_j: (int) Number of firms (or a related count)
+	chrtnum_j: (int) Chart number (for potential identification)
+	grphtype: (str) Graph type (e.g., 'bar', 'line')
+	sorttype: (str) Sorting type for data (e.g., 'asc', 'desc')
+	"""
+	# Handle grphtype argument
+	
+	type_map = {
+	1: ("Capital", "totK"),
+	2: ("Owned Capital", "ownK"),
+	3: ("Total Assets", "TA"),
+	4: ("Debt", "D"),
+	5: ("Equity", "E"),
+	6: ("Int. Goods", "IG"),
+	7: ("Gross Invst", "GI"),
+	8: ("Dividends", "DV"),
+	9: ("Output", "Y"),
+	10: ("Cashflow", "CF"),
+	11: ("Leased/Total Ratio", "LTK"),
+	12: ("Debt/Asset Ratio", "DA"),
+	13: ("N/K Ratio", "NK"),
+	14: ("GI/K Ratio", "GIK"),
+	15: ("NI/K Ratio", "NIK"),
+	16: ("Cash/Asset Ratio", "CA"),
+	17: ("Output/Capital Ratio", "YK"),
+	18: ("Dividend Growth", "DVG"),
+	}
+
+	if grphtype in type_map:
+		typestr, typestr2 = type_map[grphtype]
+	else:
+		# Handle potential unknown grphtype values (optional)
+		print(f"Warning: Unknown grphtype value {grphtype}")
+		typestr, typestr2 = "Unknown", "Unknown"
+
+	print(f"Generating graph for {typestr} ({typestr2})")
+
+	# Handle sorttype argument
+	sort_map = {
+	0: ("TS", "Technology"),
+	1: ("TFP", "TFP"),
+	2: ("HS", "Cows"),
+	3: ("DA", "D/A Ratio"),
+	}
+
+	if sorttype in sort_map:
+		typestr3, titlstr2 = sort_map[sorttype]
+	else:
+		# Handle potential unknown sorttype values (optional)
+		print(f"Warning: Unknown sorttype value {sorttype}")
+		typestr3, titlstr2 = "Unknown", "Unknown"
+
+	# Use typestr3 and titlstr2 for your graph generation logic
+	print(f"Sorting by {titlstr2} ({typestr3})")
+
+	# Generate titles for the code. I think the titles are a little fucked up, but let's look at that l8r.
+	title_prefix = ""
+
+	# Add "Technology" if sorting by technology
+	if sorttype == 0:
+		title_prefix += "Technology" + ": "  # Add colon after technology
+
+	# Add "Cohort" or "Cohort and" based on number of firms and charts
+	if FSnum_j > 1:
+		title_prefix += "Cohort"
+	else:
+		if chrtnum_j > 1:
+			title_prefix += "Cohort and "
+
+	# Add "by" if there's any sorting or cohort information
+	if title_prefix:
+		title_prefix += "by "
+
+	titlstr1 = title_prefix + titlstr2
+
+	# Assuming typestr, FSnum_j, typestr3, grphtype are already defined
+
+	# Combine title elements
+	titlstr1 = typestr + titlstr1  # Add variable name to title
+
+	# Format string for integer with leading zeros
+	format_string = "%0*d"  # Use 'd' for integers (adjust width as needed)
+
+	# Construct farm size string with leading zeros
+	FSstr = "_" + format_string % (1, FSnum_j) + typestr3 + "_"  # Adjust width for FSnum_j
+
+	# Set y-axis label based on graph type
+	if grphtype > 10:
+		yalabel = typestr  # Use variable name for y-axis
+	else:
+		yalabel = typestr + " (000s of 2011 dollars)"  # Add units to y-axis label
+
+	_="""
+	## This is the territory where we likely set up a bunch of matplotlib stuff ##
+	Line-thickness, Linecolors, linetypes, etc.
+	"""
+
+
+	if quants_j == 0:  
+		qnum_j = quants_j.shape[0]  # Get number of rows (quantiles)
+		iQunt = 1  # Flag set to indicate presence of quantiles
+	else:
+		qnum_j = 0  # Set number of quantiles to 0
+		iQunt = 0  # Flag set to indicate absence of quantiles
+
+	for i in range(qnum_j):  # Use range(qnum_j) for guaranteed number of iterations
+		iQunt = i + 1  # Adjust iQunt for zero-based indexing
+
+		# Set quantile string based on value
+		if iQunt == 0:
+			quntstr = "Mean "
+			quntstr2 = "avg"
+		elif quants_j[i] == 0.5:
+			quntstr = "Median "
+			quntstr2 = f"{50:.2f}"  # Format 50 as string with 2 decimal places
+		else:
+			quntstr2 = f"{100*quants_j[i]:.2f}"  # Format 100*quantile as string with 2 decimal places
+			quntstr = f"{quntstr2}th %tile "
+
+			"""
+			This is where they load in files from generated by grphmtx, pad them, and call doplot
+			"""
+
+			# Construct file name
+			#fnamestr = makename(grphpath, typestr2 + "dt" + typestr3, iQunt)
+
+			# Load data (assuming ^ is a data loading function)
+			#alldat = load_alldat(fnamestr)  # Replace ^ with your actual data loading function
+
+			# Get number of columns and rows
+			#cn = alldat.shape[1]  # Use shape for columns
+			#rn = alldat.shape[0]  # Use shape for rows
+
+			# Add extra rows for better plotting (assuming ~miss creates missing value mask)
+			#xtrarow1 = (alldat[0, 0] - 1) * ~np.isnan(np.ones((1, cn - 1)), axis=1)
+			#xtrarow2 = (alldat[rn - 1, 0] + 1) * ~np.isnan(np.ones((1, cn - 1)), axis=1)
+			#alldat = np.concatenate((xtrarow1[np.newaxis, :], alldat, xtrarow2[np.newaxis, :]), axis=0)
+
+			# Call doplot
+
+			#doplot(alldat, figtitle, figname, figdim)
+
+			# Skip to next iteration if grphtype is 11 (Leased/Total Ratio)
+			if grphtype == 11:
+				iQunt += 1
+				continue
+
+			# Assuming alldat, figtitle, figname, figdim, grphpath, typestr2, typestr3, iQunt, cn, xtrarow1, xtrarow2 are defined
+			_="""
+			# Load simulated data (assuming ^ is a data loading function)
+			fnamestr = makename(grphpath, typestr2 + "sm" + typestr3, iQunt)
+			allsim = load_allsim(fnamestr)  # Replace ^ with your actual data loading function
+
+			# Select relevant columns and add extra rows
+			allsim = allsim[:, :cn]  # Select columns 1 to cn (inclusive)
+			allsim = np.concatenate((xtrarow1[np.newaxis, :], allsim, xtrarow2[np.newaxis, :]), axis=0)
+
+			# Plot simulated data
+			doplot(allsim, figtitle, figname, figdim)
+
+			# Create combined data (assuming alldat and allsim have same number of rows)
+			allboth = np.logical_xor(alldat[:, 1:cn], allsim[:, 1:])  # Use np.logical_xor for XOR
+
+			# Plot combined data
+			doplot(allboth, figtitle, figname, figdim)
+			"""
+
+
+def doplot(alldat, figtitle, figname, figdim):
+	print(f"plot: {figtitle}!")
 
 
 ################   ENTRY POINT   ########
