@@ -2,6 +2,7 @@ import numpy as np
 from variables import *
 from scipy.stats import norm
 from functions import logitrv, logit
+from getfarmdat43 import load_file, datasetup, removeFE
 
 
 def getchrt(data, cohorts_j):
@@ -78,7 +79,6 @@ def getmean(data, wgts):
 		cndmnum[0, 1] = data_.shape[0]
 
 	return mns.reshape(-1,1), cndmnum.reshape(-1,1)
-
 
 # TODO: REDO WITH getquant
 def getcorrs(totcap, ykratio, nkratio, gikratio, debtasst, CAratio, dkratio, divgrowth,
@@ -617,6 +617,342 @@ def FSquant(data, wgts, quants, checktie):
 
 	return qnts, cndmnum, qntype
 
+def weighted_mean(data, weights, alive_indicator):
+  # Avoid division by zero for aliveavg or potential NaN in data or weights
+  if alive_indicator == 0 or np.any(np.isnan(data)) or np.any(np.isnan(weights)):
+    return np.nan
+  else:
+    return np.mean(data * weights) / alive_indicator
+
+def loadSims(parmvec, subdir="iofiles"):
+	"""
+	This function is run after onerun(.), and transform our outputs to outputs, that we can graph. 
+	And also use to calculate SMD-criterion. So it's very useful!!!
+	"""
+	
+	magic_constant = 24 # TODO: Find out why this is
+	print("Loading simulations...")
+	
+	# THIS STUFF IS SPAT OUT BY (initdist). A future version may take in these directly.
+	# Åbent spørgsmål, hvordan man bedst får parmvec ind i denne. 
+	# For debugging purposes its advantageous to use the real data, however
+	# I have no *€%&% clue what the shape of these vectors is lol. 
+	obsSim = load_file("obssim.txt", subdir)
+	iobsSim = load_file("iobsSim.txt", subdir)
+	dvgobsSim = load_file("dvgobsSim.txt", subdir)
+	feshks = load_file("feshks.txt", subdir)
+	IDSim = load_file("IDsim.txt", subdir)
+	simwgts = load_file("simwgts.txt", subdir)
+	ftype_sim = load_file("ftype_sim.txt", subdir)	
+
+	## THIS IS ALL THE STUFF THAT COMES FROM THE SIMULATIONS. FOR SURE LIKE THIS BC the simulations may come
+	# from C, so we need a smooth way to convert to NumPy vectors. 
+	ageS 		= load_file("ageS.txt", subdir).reshape(timespan + 1, numsims+magic_constant).T
+	assetsS 	= load_file("assetsS.txt", subdir).reshape(timespan + 1, numsims+magic_constant).T
+	cashS  		= load_file("cashS.txt", subdir).reshape(timespan + 1, numsims+magic_constant).T
+	debtS       = load_file("debtS.txt", subdir).reshape(timespan + 1, numsims+magic_constant).T
+	divsS       = load_file("divsS.txt", subdir).reshape(timespan + 1, numsims+magic_constant).T
+	equityS     = load_file("equityS.txt", subdir).reshape(timespan + 1, numsims+magic_constant).T
+	expenseS    = load_file("expenseS.txt", subdir).reshape(timespan + 1, numsims+magic_constant).T
+	fracRPS     = load_file("fracRPS.txt", subdir).reshape(timespan + 1, numsims+magic_constant).T
+	intRateS    = load_file("intRateS.txt", subdir).reshape(timespan + 1, numsims+magic_constant).T
+	liqDecS     = load_file("liqDecS.txt", subdir).reshape(timespan + 1, numsims+magic_constant).T
+	outputS     = load_file("outputS.txt", subdir).reshape(timespan + 1, numsims+magic_constant).T
+	totKS       = load_file("totKS.txt", subdir).reshape(timespan + 1, numsims+magic_constant).T
+	ZvalsS      = load_file("ZvalS.txt", subdir).reshape(timespan + 1, numsims+magic_constant).T
+
+	ageSim = ageS[:, :timespan]  # All rows, columns 0 to timespan-1 (inclusive)
+	assetSim = assetsS[:, :timespan] + 1e-10  # Add small value to avoid division by zero
+	cashSim = cashS[:, cashlag:timespan+cashlag]  # Shift by cashlag periods
+	debtSim = debtS[:, :timespan]  # All rows, columns 0 to timespan-1 (inclusive)
+	equitySim = equityS[:, :timespan]  # All rows, columns 0 to timespan-1 (inclusive)
+	expenseSim = expenseS[:, :timespan]  # All rows, columns 0 to timespan-1 (inclusive)
+	fracRPSim = fracRPS[:, :timespan]  # All rows, columns 0 to timespan-1 (inclusive)
+	intRateSim = intRateS[:, :timespan]  # All rows, columns 0 to timespan-1 (inclusive)
+	outputSim = outputS[:, :timespan]  # All rows, columns 0 to timespan-1 (inclusive)
+	ZvalSim = ZvalsS[:, tfplag:timespan+tfplag]  # Shift by tfplag periods	
+
+	prefparms, finparms,gam, ag2, nshft, fcost = makepvecs(parmvec)
+
+	hetag2 = ag2[ftype_sim]
+	hetgam = gam[ftype_sim]
+	alp = 1 - hetag2 - hetgam
+
+	(TFPaggshks, TFP_FE, TFPaggeffs, tkqntdat, DAqntdat, CAqntdat, nkqntdat, gikqntdat, 
+  	 ykqntdat, divqntdat, dvgqntdat, obsavgdat, tkqcnts, divqcnts, dvgqcnts, std_zi, zvec, 
+	 fevec, k_0, optNK, optKdat, countadj) = datasetup(gam,ag2,nshft,fcost)
+
+	# Calculate optimal capital stock
+	optKSim = (k_0 * np.exp(feshks))**(1.0 / alp)
+
+	# Dividend calculations with lag
+	divSim = divsS[:, 1+divlag:timespan+divlag]
+
+	# Fixed dividend logic
+	fixeddiv = np.abs(divSim[:, 1:timespan-1]) > divbasemin  # Logical comparison for fixed dividends
+	divsign = 1 - 2 * (divSim[:, 1:timespan-1] < 0)  # Sign of dividends
+
+	# Fixed dividend calculation with minimum threshold
+	fixeddiv = divSim[:, 1:timespan-1] * fixeddiv + divbasemin * (1 - fixeddiv) * divsign
+
+	# Dividend growth calculation (assuming dvgSim is desired output)
+	dvgSim = divSim[:, 2:timespan] / fixeddiv  # Growth rate (avoid division by zero)
+	dvgSim = np.zeros((numsims, 1))  # Assuming you want to initialize dvgSim to zeros
+	dvgSim[:-1] = dvgSim[1:]  # Copy growth rates (excluding the first element)
+
+	# Equity injection calculations
+	eqinjSim = divSim.copy()  # Copy dividend for equity injection
+	goteqiSim = eqinjSim > 0  # Logical comparison for positive equity injection
+
+	# Identify alive firms (investment decision)
+	aliveSim = liqDecS == 0  # Logical comparison for alive firms
+
+	# Forward-looking alive firms (assuming timespan starts from 2)
+	fwdalivesim = aliveSim[:, 2:timespan+1]
+
+	# Net investment
+	NInvSim = (totKS[:, 2:timespan+1] * fwdalivesim) * bigG / (1 + gkE) - totKS[:, 1:timespan] * aliveSim[:, 1:timespan]
+
+	# Depreciation
+	deprSim = totKS[:, 1:timespan] * aliveSim[:, 1:timespan] * dlt
+
+	# Gross investment
+	GInvSim = NInvSim + deprSim
+
+	# Total capital stock (avoid division by zero)
+	totKSim = totKS[:, 1:timespan] + 1e-10
+
+	# Profit
+	profitSim = outputSim - totKSim * rdgE - expenseSim
+
+	# Net worth
+	netWorthSim = assetSim - debtSim
+
+	# Investment to output ratio (assuming hetag2 and expenseSim-fcost+nshft are element-wise non-zero)
+	iZvalSim = outputSim / ((totKSim**hetgam) * ((expenseSim - fcost + nshft)**hetag2))
+
+	# Liquidation decision (excluding first period)
+	liqDecSim = liqDecS[:, 1:timespan]
+
+	# Alive firms with forward-looking adjustment (excluding simulated liquidators)
+	ialiveSim = aliveSim[:, 1:timespan] * fwdalivesim
+
+	# Debt-to-value of exiting firms with lag (excluding the last period)
+	dvgaliveSim = aliveSim[:, 1+divlag:timespan+divlag] * (np.zeros((numsims, 1)) != aliveSim[:, 1+divlag:timespan+divlag-1])
+
+	# Alive firms (excluding first period)
+	aliveSim = aliveSim[:, 1:timespan]
+
+	# Exit errors (based on observed exit and simulated exit)
+	exiterrs = (aliveSim == 0) * obsSim  # Element-wise multiplication
+
+	# Any exit errors in the simulation
+	gotxerrs = (exiterrs * np.ones((timespan, 1)) > 0).any(axis=0)  # Check if any errors exist in any simulation
+
+	# List of unique firm IDs
+	iDlist = np.unique(IDSim)
+
+	# Dummy variables for fixed effects regression
+	iDDums = IDSim[:, None] == iDlist  # Broadcast comparison for dummies
+
+	# Average exit errors by fixed effects
+	# Assuming invpd is a function for inverting a matrix with potential singular values
+	xerravg = np.linalg.pinv(iDDums.T @ iDDums) @ (iDDums.T @ (gotxerrs != exiterrs))
+
+	# Assuming iobsSim, dvgobsSim, obsSim, cashlag, divaliveSim (potentially from previous steps) are already defined
+
+	# Alive firms with observation adjustment
+	ialiveSim = iobsSim * ialiveSim  # Element-wise multiplication
+
+	# Debt-to-value of exiting firms with observation adjustment
+	dvgaliveSim = dvgobsSim * dvgaliveSim  # Element-wise multiplication
+
+	# Alive firms based on observations
+	aliveSim = obsSim * aliveSim  # Element-wise multiplication
+
+	# Forward-looking alive firms with observation adjustment
+	fwdalivesim = obsSim * fwdalivesim  # Element-wise multiplication
+
+	# Debt-weighted average capital stock of alive firms
+	divaliveSim = divlag * fwdalivesim + (1 - divlag) * aliveSim  # Weighted average
+
+	# Debt-value product of alive firms
+	DVKalivesim = divaliveSim * aliveSim  # Element-wise multiplication
+
+	# Cash-weighted average capital stock of alive firms
+	cshaliveSim = cashlag * fwdalivesim + (1 - cashlag) * aliveSim  # Weighted average
+
+	# Cash-value product of alive firms
+	CAaliveSim = cshaliveSim * aliveSim  # Element-wise multiplication
+
+	# NY DAG NY KODE!!!
+	# Debt-to-asset ratio (missing values set to -1)
+	DAratioSim = ((debtSim / assetSim) + 1) * aliveSim - 1
+	DAratioSim[np.isnan(DAratioSim)] = -1  # Explicitly set NaN to -1
+
+	# Cash-to-asset ratio (missing values set to -1)
+	CAratioSim = ((cashSim / assetSim) + 1) * CAaliveSim - 1
+	CAratioSim[np.isnan(CAratioSim)] = -1
+
+	# Expense-to-capital ratio (missing values set to -1)
+	NKratioSim = ((expenseSim / totKSim) + 1) * aliveSim - 1
+	NKratioSim[np.isnan(NKratioSim)] = -1
+
+	# Output-to-capital ratio (missing values set to -1)
+	YKratioSim = ((outputSim / totKSim) + 1) * aliveSim - 1
+	YKratioSim[np.isnan(YKratioSim)] = -1
+
+	# Net investment-to-capital ratio (missing values set to -1)
+	NIKratioSim = ((NInvSim / totKSim) + 1) * ialiveSim - 1
+	NIKratioSim[np.isnan(NIKratioSim)] = -1
+
+	# Gross investment-to-capital ratio (missing values set to -1)
+	GIKratioSim = ((GInvSim / totKSim) + 1) * ialiveSim - 1
+	GIKratioSim[np.isnan(GIKratioSim)] = -1
+
+	# Debt-value-to-capital ratio (missing values set to -1)
+	DVKratioSim = ((divSim / totKSim) + 1) * DVKalivesim - 1
+	DVKratioSim[np.isnan(DVKratioSim)] = -1
+
+	# Assuming abs is a built-in function, simwgts is already defined
+
+	# Remove financial effects (potentially a custom function)
+	DVFEratioSim, DVFESim = removeFE(np.abs(divSim), divaliveSim)
+
+	# Debt-to-financial equity ratio (adjusted for missing values)
+	DVFEratioSim = (divSim / DVFESim + 1) * aliveSim - 1
+	DVFEratioSim[np.isnan(DVFEratioSim)] = -1  # Explicitly set NaN to -1
+
+	# Alive firms with weights
+	alivesim2 = aliveSim * simwgts  # Element-wise multiplication
+	ialivesim2 = ialiveSim * simwgts  # Element-wise multiplication
+	CAalivesim2 = CAaliveSim * simwgts  # Element-wise multiplication
+	cshalivesim2 = cshaliveSim * simwgts  # Element-wise multiplication
+	divalivesim2 = divaliveSim * simwgts  # Element-wise multiplication
+
+	# Average values weighted by simwgts
+	aliveavg = np.mean(alivesim2)
+	ialiveavg = np.mean(ialivesim2)
+	CAaliveavg = np.mean(CAalivesim2)
+	cshaliveavg = np.mean(cshalivesim2)
+	divaliveavg = np.mean(divalivesim2)
+
+	"""
+	Kæmpe show her om simavg. Tror kun, det bliver brugt som output, så ikke så vigtigt. Har det mest med
+	for sjov. Hvis det ikke virker, comment det ud 
+	"""
+	simavg = np.concatenate(
+    weighted_mean(ZvalSim * alivesim2, aliveavg),
+    weighted_mean(assetSim * alivesim2, aliveavg) / CAaliveavg,  # Use CAaliveavg here
+    weighted_mean(DAratioSim * alivesim2, aliveavg) / aliveavg,
+    weighted_mean(CAratioSim * CAalivesim2, CAaliveavg) / CAaliveavg,  # Use CAaliveavg here
+    weighted_mean(totKSim * alivesim2, aliveavg) / aliveavg,
+    weighted_mean(NKratioSim * alivesim2, aliveavg) / aliveavg,
+    weighted_mean(YKratioSim * alivesim2, aliveavg) / aliveavg,
+    weighted_mean(NIKratioSim * ialivesim2, ialiveavg) / ialiveavg,
+    weighted_mean(GIKratioSim * ialivesim2, ialiveavg) / ialiveavg
+)
+
+	# Use weighted exit errors (don't multiply with alivesim)
+	simavg = np.concatenate(simavg, np.mean(exiterrs * simwgts) / aliveavg)
+
+	# Assuming firstyr, timespan, exiterrs, aliveavg, CAaliveavg, ialiveavg, simavg are already defined
+	print("       Year   frac alive     TFP shks       Assets  Debt/Assets  Cash/Assets     Capital   igoods/K")
+	print("       Y/K    Net Inv/K    Gross I/K     Exit Errs")
+
+	# Sequence of years
+	years = np.arange(firstyr, timespan + 1)
+
+	# Average exit errors (excluding NaN values)
+	avxerr = np.nanmean(exiterrs) / aliveavg / np.sum(aliveavg)  # Consider NaN handling
+
+	# Standardized averages (weighted by aliveavg or CAaliveavg)
+	saa = np.empty((11,))  # Pre-allocate empty array for standardized averages
+
+	saa[0:3] = (aliveavg * simavg[:, 0:3] / np.sum(aliveavg))  # Fraction alive, TFP, Assets
+	saa[3] = (CAaliveavg * simavg[:, 3] / np.sum(CAaliveavg))  # Debt/Assets (use CAaliveavg)
+	saa[4:8] = (aliveavg * simavg[:, 4:8] / np.sum(aliveavg))  # Cash/Assets, Capital, igoods/K
+	saa[8:10] = (ialiveavg * simavg[:, 8:10] / np.sum(ialiveavg))  # Y/K, Net Inv/K
+	saa[10] = (aliveavg * simavg[:, 10] / np.sum(aliveavg))  # Gross I/K
+
+	# Print results
+	print(" All years ", saa)
+
+	# now return this big ol' mess
+	return (ageSim, assetSim, cashSim, debtSim, divSim, dvgSim, eqinjSim, goteqiSim,
+                      equitySim, expenseSim, fracRPSim, intRateSim, liqDecSim, NKratioSim, 
+                      outputSim, totKSim, ZvalSim, aliveSim, ialiveSim, dvgaliveSim, 
+                      fwdalivesim, divaliveSim, DVKalivesim, cshaliveSim, CAaliveSim, exiterrs, 
+                      deprSim, NInvSim, GInvSim, DAratioSim, CAratioSim, YKratioSim, NIKratioSim, 
+                      GIKratioSim, DVKratioSim, DVKratioSim, profitSim, netWorthSim, avxerr)
+
+
+def simprofs(FType, timespan, FSstate, checktie, farmsize, cht_sim,
+          aliveSim, ialiveSim, dvgaliveSim, divaliveSim, CAalivesim,
+          totKSim, divSim, dvgSim, DAratioSim, NKratioSim, GIKratioSim,
+          CAratioSim, YKratioSim, simwgts, prngrph, obsmat):
+	"""
+	Returns arrays sorted by farm-size and calls some graph making function. 
+	We blur out the graph making function for now. 
+	Note: we add obsmat
+	"""
+	dumswgts = np.ones((numsims, timespan))
+
+	FSwgts = aliveSim * simwgts
+	FSwgts = np.mean(FSwgts, axis=1) / np.mean(aliveSim, axis=1)  # Farm-level averages. 
+	# column averages of transposed vectors => axis=1, I think
+
+	# Sorting by farm size (if number of farms exceeds observations)
+	sorttype = 0
+	if obsmat.shape[0] < farmsize.shape[0]:  # Check rows instead of explicit rows() function
+		sorttype = sizevar # 1 or 2. sort by TFP (productivity) vs cows (gross size)
+
+		if np.max(FSstate) > 0:  # Check if there are state variables
+			FSgroups = farmsize.shape[0] + 1  # Number of farm groups (including potential extra group)
+
+			if wgtdsplit == 0:  # Use dummy weights if not using weighted split
+				# check these dummy weights
+				FSqnts, FScounts, FType = FSquant(farmsize, dumswgts[:,0], FSstate, checktie)
+			else:
+				FSqnts, FScounts, FType = FSquant(farmsize, FSwgts, FSstate, checktie)
+		else:
+			FSgroups = 1  # Single group if no state variables
+			FType = np.ones((farmsize.shape[0], 1))  # All farms have type 1 (assuming)
+	else:
+		FSgroups = np.unique(FType, axis=0).shape[0]  # Number of unique firm types (groups)
+
+	# Get quantiles for various variables with alive firm indicators
+	tkqntsim, quantcnts = getqunts(cht_sim, FType, totKSim, aliveSim, quants_lv, timespan, simwgts)  # Total capital
+	divqntsim, quantcnts = getqunts(cht_sim, FType, divSim, divaliveSim, quants_lv, timespan, simwgts)  # Debt
+
+	# Get quantiles for ratios with relevant alive firm indicators
+	DAqntsim, quantcnts = getqunts(cht_sim, FType, DAratioSim, aliveSim, quants_rt, timespan, simwgts)  # Debt-to-Asset
+	nkqntsim, quantcnts = getqunts(cht_sim, FType, NKratioSim, aliveSim, quants_rt, timespan, simwgts)  # Expense-to-Capital
+	gikqntsim, quantcnts = getqunts(cht_sim, FType, GIKratioSim, ialiveSim, quants_rt, timespan, simwgts)  # Gross Investment-to-Capital
+	CAqntsim, quantcnts = getqunts(cht_sim, FType, CAratioSim, CAalivesim, quants_rt, timespan, simwgts)  # Cash-to-Asset
+	ykqntsim, quantcnts = getqunts(cht_sim, FType, YKratioSim, aliveSim, quants_rt, timespan, simwgts)  # Output-to-Capital
+	dvgqntsim, quantcnts = getqunts(cht_sim, FType, dvgSim, dvgaliveSim, quants_rt, timespan, simwgts)  # Debt-to-Value (exiting)
+
+	# Get quantiles for observed average (using dummy weights)
+	obsavgsim, quantcnts = getqunts(cht_sim, FType, aliveSim, dumswgts, 0, timespan, simwgts)
+
+	"""
+	her nogle 
+	graphmtx (graph matrix)
+	+
+	makgrph2 (make graph 2)
+	"""
+
+	return tkqntsim, DAqntsim, nkqntsim, gikqntsim, CAqntsim, ykqntsim, divqntsim, dvgqntsim, obsavgsim
+
+
+
+
+
+
+
+# TODO: Make one-run. Basically call the file, and then return the SMD-criterion.
+# Question: What is the SMD-criterion? - GMM
 
 def onerun(parmvec):
 	# Initialize placeholders and variables

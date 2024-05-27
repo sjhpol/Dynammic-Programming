@@ -1,12 +1,12 @@
 import numpy as np
-from getfarmdat43 import loaddat, initdist, dataprofs, fbillvec, getTFP
+from getfarmdat43 import loaddat, initdist, dataprofs, datasetup, fbillvec, getTFP
 from simcrit41 import getgrids, makepvecs, tauch
 from markch import markch
 
 from variables import *
 from functions import logitrv, logit
 
-
+# We can automate this! :)
 rootdir = r"C:\Users\Simon\Downloads\Jones_Pratap_AER_2017-0370_Archive\Jones_Pratap_AER_2017-0370_Archive\estimation_fake_copy"
 runnumber = ""
 datapath = rootdir + "data\\Full_Sample\\"
@@ -115,89 +115,6 @@ del bta, nu, c_0, cfloor, chi0, finalMPC, c_bar, alp, gam0, nshft0, lam, phi, zt
 prefparms, finparms, gam, ag2, nshft, fcost = makepvecs(parmvec, betamax, linprefs, nobeq, w_0, bigR, numFTypes, inadaU, nonshft, noDScost, nofcost, nocolcnst, prnres, noReneg, finparms0)
 
 
-def datasetup(gam, ag2, nshft, fcost, rloutput, totcap, intgoods, obsmat, farmtype, av_cows, famsize):
-	# Local variables initialization
-	TFPaggshks, std_zi, std_fe, TFP_FE, std_za, TFPaggeffs = getTFP(rloutput, totcap, intgoods, obsmat, gam, ag2, nshft,
-																	fcost, statacrap, yrseq, firstyr, farmtype)
-
-	# Determine farmsize based on sizevar
-	if sizevar == 1:
-		farmsize = TFP_FE
-	elif sizevar == 2:
-		farmsize = av_cows / famsize
-
-	# Calculate standard deviation of TFP shock
-	std_z = np.sqrt(std_zi ** 2 + std_za ** 2)
-
-	zdim = 8
-
-	# Handle different cases based on zdim
-	if zdim == 1:
-		TFP_FE += (std_z ** 2) / 2
-		zvals = np.array([0])
-		zpmtx = np.array([1])
-		std_zi = 0
-		TFPaggshks = np.zeros_like(TFPaggshks)
-		std_z = 0
-	elif farmbill[0] == 1:
-		zvals, zpmtx, zdim, zamin = fbillvec(std_zi, std_za)
-		if farmbill[1] > 0:
-			TFPaggshks = np.maximum(TFPaggshks.T, np.tile(zamin, (TFPaggshks.shape[1], 1)))
-			TFP_FE += np.log(farmbill[2])
-	else:
-		zpmtx, zvals, intvals = tauch(std_z, rho_z, zdim, cutoff_z, cutoff_z)
-
-	# Ensure the last column of zpmtx sums to 1
-	if zdim > 1:
-		zpmtx[:, zdim - 1] = 1 - np.sum(zpmtx[:, :zdim - 1], axis=1)
-
-	# Print transitory shocks if prnres > 1 and zdim > 1
-	if prnres > 1 and zdim > 1:
-		j1, j2, j3, j4, j5, j6 = markch(zpmtx, zvals)
-	else:
-		print(zvals)
-
-	# Convert zvals to exponential form
-	zvals = np.exp(zvals)
-	zvec = np.hstack([zdim, rho_z, std_z, zvals, zpmtx.flatten()])
-
-	# FE STUFF
-	fepmtx, fevals, intvals = tauch(std_fe, 0.0, fedim, cutoff_fe, cutoff_fe)
-	feprobs = fepmtx[0,:]
-	mean_fe = np.mean(TFP_FE, axis=0)
-	fevals = np.exp(fevals + mean_fe)
-	fevec = np.hstack([fedim, 0, std_fe, fevals, feprobs])
-	print('Persisntent shocks:')
-	print('Level:', fevals)
-	print('Logs: ', np.log(fevals))
-
-	# Calculate farmsize related values
-	hetag2 = ag2[farmtype.reshape(-1,).astype(int) - 1]
-	hetgam = gam[farmtype.reshape(-1,).astype(int) - 1]
-	alp = 1 - hetag2 - hetgam
-	optNK = rdgE * hetag2 / hetgam
-	k_0 = ((hetgam / rdgE) ** (1 - hetag2)) * (hetag2 ** hetag2) * np.exp((std_z ** 2) / 2)
-	optKdat = (k_0 * np.exp(TFP_FE)) ** (1 / alp)
-
-	# Set profsort based on GMMsort
-	if GMMsort == 0:
-		profsort = 0
-	else:
-		profsort = farmtype
-
-	# Data profiles calculation
-	tkqntdat, DAqntdat, CAqntdat, nkqntdat, gikqntdat, ykqntdat, divqntdat, dvgqntdat, obsavgdat, \
-		tkqcnts, divqcnts, dvgqcnts, countadj = dataprofs(profsort, farmsize, FSstate, timespan, datawgts,
-														  checktie, chrttype, obsmat, iobsmat, dvgobsmat,
-														  quants_lv, quants_rt, totcap, dividends,
-														  divgrowth, LTKratio, debtasst, nkratio, gikratio,
-														  CAratio, ykratio, dumdwgts)
-
-	return TFPaggshks, TFP_FE, TFPaggeffs, tkqntdat, DAqntdat, CAqntdat, nkqntdat, gikqntdat, \
-		ykqntdat, divqntdat, dvgqntdat, obsavgdat, tkqcnts, divqcnts, dvgqcnts, std_zi, zvec, \
-		fevec, k_0, optNK, optKdat, countadj
-
-
 TFPaggshks, TFP_FE, TFPaggeffs, tkqntdat, DAqntdat, CAqntdat, nkqntdat, gikqntdat, \
 	ykqntdat, divqntdat, dvgqntdat, obsavgdat, tkqcnts, divqcnts, dvgqcnts, std_zi,\
 	zvec, fevec, k_0, optNK, optKdat, countadj = datasetup(gam, ag2, nshft, fcost, rloutput,\
@@ -226,6 +143,7 @@ maxiter   = 1500
 feval     = 0
 
 # ngl stopped this into Google Gemini because I was getting frustrated. Let's hope it still works!!
+
 # STUFF FOR STANDARD ERRORS. IGNORE FOR NOW
 _="""
 numparms = parmvec.size

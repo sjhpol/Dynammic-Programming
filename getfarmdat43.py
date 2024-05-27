@@ -1,12 +1,15 @@
 import numpy as np
 import os
+from pathlib import Path
 
 import pandas as pd
 from scipy.stats import norm
 
-from simcrit41 import getchrt, getcorrs, getqunts, tauch, FSquant
+from simcrit41 import getchrt, getcorrs, getqunts, tauch, FSquant, makepvecs
 from markch import markch
 from variables import *
+#from babyfarm42b_cash import parmvec
+import matplotlib.pyplot as plt
 
 
 def removeFE(datamat_j, obsmat_j):
@@ -31,8 +34,8 @@ def removeFE(datamat_j, obsmat_j):
 def loaddat(nyrsdat, lsdadj, cashtfp, chrtnum, chrtstep, sizescreen, wgtddata):
 	print("THE DATA SPEAKS!")
 
-	datapath = r"C:\Users\Simon\Downloads\Jones_Pratap_AER_2017-0370_Archive\Jones_Pratap_AER_2017-0370_Archive\estimation_fake\data\Full_Sample"
-
+	#datapath = r"C:\Users\Simon\Downloads\Jones_Pratap_AER_2017-0370_Archive\Jones_Pratap_AER_2017-0370_Archive\estimation_fake\data\Full_Sample"
+	datapath = "/Users/hjaltewallin/Code/Jones_Pratap_AER_2017-0370_Archive/estimation_fake/data/Full_Sample"
 	numfarms = 363
 
 	datstr = os.path.join(datapath, "fake_av_famsize.txt")
@@ -300,7 +303,7 @@ def loaddat(nyrsdat, lsdadj, cashtfp, chrtnum, chrtstep, sizescreen, wgtddata):
 	nikratio = iobsmat * nikratio + imvc2
 	invtyinv = obsmat * invtyinv + mvc2
 
-	# //  Remove observations not in old, truncated dataset
+	# // Remove observations not in old, truncated dataset
 	subsmpl = (av_cows > sizescreen[0]) & (av_cows <= sizescreen[1])
 	subsmpl = np.where(subsmpl)[0]
 
@@ -535,7 +538,7 @@ def FEReg(YvarMtx, obsmat_y, XvarMtx, timeseq, statacrap):
 
 	nfarms = len(YvarMtx)
 	obsvec_y = obsmat_y.flatten()
-	y_ucmean = np.mean(YvarMtx.flatten()[obsvec_y.astype(bool)])
+	y_ucmean = np.mean(YvarMtx.flatten()[obsvec_y.astype(bool)], axis=0)
 	Y_dm, YFE = removeFE(YvarMtx, obsmat_y)
 	Yvec = Y_dm.flatten()[obsvec_y.astype(bool)]
 
@@ -544,7 +547,7 @@ def FEReg(YvarMtx, obsmat_y, XvarMtx, timeseq, statacrap):
 	tn = len(timeseq)
 	timedums = const
 	XmatFE = np.ones(nfarms)
-	td_ucmean = np.mean(const)
+	td_ucmean = np.mean(const, axis=0)
 
 	if tn > 1:
 		timemtx = np.ones((numfarms, 1)) * timeseq
@@ -554,7 +557,7 @@ def FEReg(YvarMtx, obsmat_y, XvarMtx, timeseq, statacrap):
 
 		iYr = 0
 		tdtemp = (timemtx == timeseq[iYr])
-		td_ucmean.append(np.mean(tdtemp.flatten()[obsvec_y.astype(bool)]))
+		td_ucmean.append(np.mean(tdtemp.flatten()[obsvec_y.astype(bool)], axis=0))
 		td_dm, tdFE = removeFE(tdtemp, obsmat_y)
 		tdtemp = td_dm.flatten()[obsvec_y.astype(bool)]
 		timedums = tdtemp
@@ -562,7 +565,7 @@ def FEReg(YvarMtx, obsmat_y, XvarMtx, timeseq, statacrap):
 
 		for iYr in range(1, tn):
 			tdtemp = (timemtx == timeseq[iYr])
-			td_ucmean.append(np.mean(tdtemp.flatten()[obsvec_y.astype(bool)]))
+			td_ucmean.append(np.mean(tdtemp.flatten()[obsvec_y.astype(bool)], axis=0))
 			td_dm, tdFE = removeFE(tdtemp, obsmat_y)
 			tdtemp = td_dm.flatten()[obsvec_y.astype(bool)]
 			timedums = np.column_stack([timedums, tdtemp])
@@ -580,7 +583,7 @@ def FEReg(YvarMtx, obsmat_y, XvarMtx, timeseq, statacrap):
 		x_ucmean = []
 		for iX in range(nX):
 			Xtemp = XvarMtx[iX * nfarms: (iX + 1) * nfarms, :]
-			x_ucmean.append(np.mean(Xtemp[obsvec_y]))
+			x_ucmean.append(np.mean(Xtemp[obsvec_y], axis=0))
 			X_dm, XFE = removeFE(Xtemp, obsmat_y)
 			Xtemp = X_dm[obsvec_y]
 			Xmat = np.concatenate((Xmat, Xtemp), axis=1)
@@ -607,10 +610,10 @@ def FEReg(YvarMtx, obsmat_y, XvarMtx, timeseq, statacrap):
 	if tn > 1:
 		if statacrap == 0:
 			coeffs[1:tn] = coeffs[1:tn] + coeffs[0]
-		coeffs[:tn] = coeffs[:tn] - np.mean(coeffs[:tn])
+		coeffs[:tn] = coeffs[:tn] - np.mean(coeffs[:tn], axis=0)
 
 	std_FE = np.std(muFE)
-	muFE = muFE + y_ucmean - x_ucmean @ coeffs - np.mean(muFE)
+	muFE = muFE + y_ucmean - x_ucmean @ coeffs - np.mean(muFE, axis=0)
 
 	meanadj = ((1 - aggshkscl) * np.std(coeffs)) ** 2 + ((1 - idioshkscl) * std_eps) ** 2
 	muFE = muFE + meanadj / 2
@@ -661,6 +664,9 @@ def getTFP(rloutput, totcap, intgoods, obsmat, gam, ag2, nshft, fcost, statacrap
 
 
 def fbillvec(std_zi, std_za):
+	"""
+	I think this is all the stuff related to the farm bill section. Might be useful for counterfactuals?
+	"""
 	zamin = -1e10
 
 	if std_zi > 0:
@@ -696,6 +702,92 @@ def fbillvec(std_zi, std_za):
 
 	return zvals, zpmtx, zdim, zamin
 
+def datasetup(gam, ag2, nshft, fcost, rloutput, totcap, intgoods, obsmat, 
+			  farmtype, av_cows, famsize, datawgts, chrttype, iobsmat, dvgobsmat, 
+			  dividends, divgrowth, LTKratio, debtasst, nkratio, gikratio,
+			    CAratio, ykratio, dumdwgts):
+	# Local variables initialization
+	TFPaggshks, std_zi, std_fe, TFP_FE, std_za, TFPaggeffs = getTFP(rloutput, totcap, intgoods, obsmat, gam, ag2, nshft,
+																	fcost, statacrap, yrseq, firstyr, farmtype)
+
+	
+
+	# Determine farmsize based on sizevar
+	if sizevar == 1:
+		farmsize = TFP_FE
+	elif sizevar == 2:
+		farmsize = av_cows / famsize
+
+	# Calculate standard deviation of TFP shock
+	std_z = np.sqrt(std_zi ** 2 + std_za ** 2)
+
+	zdim = 8
+
+	# Handle different cases based on zdim
+	if zdim == 1:
+		TFP_FE += (std_z ** 2) / 2
+		zvals = np.array([0])
+		zpmtx = np.array([1])
+		std_zi = 0
+		TFPaggshks = np.zeros_like(TFPaggshks)
+		std_z = 0
+	elif farmbill[0] == 1:
+		zvals, zpmtx, zdim, zamin = fbillvec(std_zi, std_za)
+		if farmbill[1] > 0:
+			TFPaggshks = np.maximum(TFPaggshks.T, np.tile(zamin, (TFPaggshks.shape[1], 1)))
+			TFP_FE += np.log(farmbill[2])
+	else:
+		zpmtx, zvals, intvals = tauch(std_z, rho_z, zdim, cutoff_z, cutoff_z)
+
+	# Ensure the last column of zpmtx sums to 1
+	if zdim > 1:
+		zpmtx[:, zdim - 1] = 1 - np.sum(zpmtx[:, :zdim - 1], axis=1)
+
+	# Print transitory shocks if prnres > 1 and zdim > 1
+	if prnres > 1 and zdim > 1:
+		j1, j2, j3, j4, j5, j6 = markch(zpmtx, zvals)
+	else:
+		print(zvals)
+
+	# Convert zvals to exponential form
+	zvals = np.exp(zvals)
+	zvec = np.hstack([zdim, rho_z, std_z, zvals, zpmtx.flatten()])
+
+	# FE STUFF
+	fepmtx, fevals, intvals = tauch(std_fe, 0.0, fedim, cutoff_fe, cutoff_fe)
+	feprobs = fepmtx[0,:]
+	mean_fe = np.mean(TFP_FE, axis=0)
+	fevals = np.exp(fevals + mean_fe)
+	fevec = np.hstack([fedim, 0, std_fe, fevals, feprobs])
+	print('Persisntent shocks:')
+	print('Level:', fevals)
+	print('Logs: ', np.log(fevals))
+
+	# Calculate farmsize related values
+	hetag2 = ag2[farmtype.reshape(-1,).astype(int) - 1]
+	hetgam = gam[farmtype.reshape(-1,).astype(int) - 1]
+	alp = 1 - hetag2 - hetgam
+	optNK = rdgE * hetag2 / hetgam
+	k_0 = ((hetgam / rdgE) ** (1 - hetag2)) * (hetag2 ** hetag2) * np.exp((std_z ** 2) / 2)
+	optKdat = (k_0 * np.exp(TFP_FE)) ** (1 / alp)
+
+	# Set profsort based on GMMsort
+	if GMMsort == 0:
+		profsort = 0
+	else:
+		profsort = farmtype
+
+	# Data profiles calculation
+	tkqntdat, DAqntdat, CAqntdat, nkqntdat, gikqntdat, ykqntdat, divqntdat, dvgqntdat, obsavgdat, \
+		tkqcnts, divqcnts, dvgqcnts, countadj = dataprofs(profsort, farmsize, FSstate, timespan, datawgts,
+														  checktie, chrttype, obsmat, iobsmat, dvgobsmat,
+														  quants_lv, quants_rt, totcap, dividends,
+														  divgrowth, LTKratio, debtasst, nkratio, gikratio,
+														  CAratio, ykratio, dumdwgts)
+
+	return TFPaggshks, TFP_FE, TFPaggeffs, tkqntdat, DAqntdat, CAqntdat, nkqntdat, gikqntdat, \
+		ykqntdat, divqntdat, dvgqntdat, obsavgdat, tkqcnts, divqcnts, dvgqcnts, std_zi, zvec, \
+		fevec, k_0, optNK, optKdat, countadj
 
 def dataprofs(FType, farmsize, FSstate, timespan, datawgts, checktie, chrttype, obsmat,
 				iobsmat, dvgobsmat, quants_lv, quants_rt, totcap, dividends, divgrowth,
@@ -727,10 +819,11 @@ def dataprofs(FType, farmsize, FSstate, timespan, datawgts, checktie, chrttype, 
 	countadj = np.ones((chrtnum, FSgroups))  # Adjust moments for cell counts
 	if wgtdmmts == 1:
 		if wgtddata == 0:
-			# Need to redefine FSwgts to use herd size weights
-			datapath = r"C:\Users\Simon\Downloads\Jones_Pratap_AER_2017-0370_Archive\Jones_Pratap_AER_2017-0370_Archive\estimation_fake\data\Full_Sample"
-			datstr = os.path.join(datapath, "fake_weights.txt")
-			FSwgts = np.loadtxt(datstr, ndmin=2)
+			# TODO: Need to redefine FSwgts to use herd size weights
+			# I think there might be some problems maintaining cross-platform compatibility if we go 2 directories deep.
+			# move all of /data/Full_sample/ to just /data/?
+			
+			FSwgts = load_file("fake_weights.txt", subdir="data/Full_sample", ndmin=2)
 			FSwgts = FSwgts * (FSwgts > -99)
 			FSwgts = obsmat * FSwgts
 			FSwgts = np.mean(FSwgts, axis=1) / np.mean(obsmat, axis=1)  # farm averages
@@ -766,6 +859,371 @@ def dataprofs(FType, farmsize, FSstate, timespan, datawgts, checktie, chrttype, 
 	# grphmtx(dvgqntdat, 18, 0, quants_rt, FSgroups, chrtnum, timespan, sorttype)
 
 	return tkqntdat, DAqntdat, CAqntdat, nkqntdat, gikqntdat, ykqntdat, divqntdat, dvgqntdat, obsavgdat, tkqcnts, divqcnts, dvgqcnts, countadj
+
+def generate_all_summary_statistics():
+	"""Outputs summary statistics in LATEX format"""
+
+	(IDs, owncap, obsmat, lsdcap, totcap, LTKratio, totasst, totliab, equity, cash,
+			CAratio, debtasst, intgoods, nkratio, rloutput, ykratio, cashflow, dividends,
+			divgrowth, dvgobsmat, DVKratio, DVFEratio, eqinject, goteqinj, grossinv, gikratio,
+			netinv, nikratio, iobsmat, age_2001, init_yr, init_age, av_cows, famsize, cohorts,
+			chrttype, milktype, herdtype, farmtype, avgage, datawgts, initstate) = loaddat(timespan, np.array([1, 0]), 1, chrtnum, chrtstep, sizescreen, wgtddata) # du skal ikke spørge hvorfor
+
+	# LATEX table header
+	print("\\begin{tabular}{lccccc}")
+	print("\\headrow{Variable & Mean & Median & Std. Dev. & Max & Min} \\\\")
+
+	# TODO: Implement periode-kode, som angiver, hvilken periode det er i. 
+	# Nemmere løsning: Vi opdeler dem på (år,værdi), og så snitter vi over værdi betinget på år (=0)
+
+	summary_statistic_dictionary = {
+								"Family size": famsize,
+								"youngest operator age": init_age,
+								"totals assets": totasst,
+								"average age": avgage,
+								"divident growth": divgrowth}
+
+	# Loop through the dictionary and calculate statistics
+	for key, element in summary_statistic_dictionary.items():
+		summary_statistic = return_individual_sum_stats(element)
+		# Format statistics for LATEX output
+		print(f"{key} \t\t& {summary_statistic[0]:.2f} & {summary_statistic[1]:.2f} & {summary_statistic[2]:.2f} & {summary_statistic[3]:.0f} & {summary_statistic[4]:.0f} \\\\")
+
+	# LATEX table footer
+	print("\\end{tabular}")
+
+def return_individual_sum_stats(statistic, mvcode=-99):
+    """
+    Calculates summary statistics, handling missing values (mvcode).
+
+    Args:
+        statistic (numpy.ndarray): The array containing data for which to calculate statistics.
+        mvcode (int, optional): The code representing missing values. Defaults to -99.
+
+    Returns:
+        numpy.ndarray: An array containing the calculated statistics (mean, median, std, min, max).
+    """
+
+    # Remove observations with missing values (mvcode) before calculating statistics
+    filtered_statistic = statistic[statistic != mvcode]
+
+    # Check if any data remains after filtering
+    if not filtered_statistic.any():
+        raise ValueError("No valid data for calculating statistics. All values are missing (mvcode).")
+
+    mean = np.mean(filtered_statistic)
+    median = np.median(filtered_statistic)
+    std = np.std(filtered_statistic)
+    min = np.min(filtered_statistic)
+    max = np.max(filtered_statistic)
+
+    return np.array((mean, median, std, min, max))
+
+def load_file(filename, subdir="iofiles", ndmin=1):
+  """Loads data from a file in a subdirectory into a NumPy array of floats.
+
+  Args:
+      filename (str, optional): The name of the data file.
+      subdir (str, optional): The name of the subdirectory containing the data. Defaults to "iofiles".
+
+  Returns:
+      A NumPy array containing the data from the file, or None if the file
+      is not found or an error occurs during loading.
+  """
+
+  # Construct the full path to the file
+  this_directory = os.path.dirname(__file__)
+  full_subdir = os.path.join(this_directory, subdir)
+  filepath = os.path.join(full_subdir, filename)
+  
+  try:
+    data = np.loadtxt(filepath, dtype=float)
+    return data
+  except FileNotFoundError:
+    print(f"Error: File '{filepath}' not found.")
+    return None
+
+def comparison_graph(simulated_series, real_series):
+	# Given a time series of simulated and real data, where the x-axis is age, 
+	# and the y-axis is given by the input, output two graphs
+	pass
+
+def grphmtx(dataprfs, vartype, datatype, quants_j, FSnum_j, chrtnum_j, numyrs_j, sorttype):
+	"""
+	WIP.
+	This function shapes the data how we want it. Core to making graphs. 
+
+	Args:
+		dataprfs: (array-like) Data profiles (possibly from previous steps)
+		vartype: (str) Variable type (e.g., 'Y', 'D')
+		datatype: (str) Data type (e.g., 'L', 'C')
+		quants_j: (array-like) Quantiles (possibly from previous step)
+		FSnum_j: (int) Number of firms (or a related count)
+		chrtnum_j: (int) Chart number (for potential identification)
+		numyrs_j: (int) Number of years (relevant data period)
+		sorttype: (str) Sorting type for data (e.g., 'asc', 'desc')
+	"""
+	vartype_to_name = {
+	1: "totK",
+	2: "ownK",
+	3: "TA",
+	4: "D",
+	5: "IG",
+	6: "GI",
+	7: "NI",
+	8: "DV",
+	9: "Y",
+	10: "CF",
+	11: "LTK",
+	12: "DA",
+	13: "NK",
+	14: "GIK",
+	15: "NIK",
+	16: "CA",
+	17: "YK",
+	18: "DVG",
+	}
+
+	if vartype in vartype_to_name:
+		name1 = vartype_to_name[vartype]
+	else:
+		# Handle potential unknown vartype values
+		print(f"Warning: Unknown vartype value {vartype}")
+		name1 = "Unknown vartype"
+
+	datatype_to_suffix = {
+	0: "dt",  # Data
+	1: "sm",  # Simulation
+	}
+
+	if datatype in datatype_to_suffix:
+		name2 = datatype_to_suffix[datatype]
+	else:
+		# Handle potential unknown vartype values
+		print(f"Warning: Unknown datatype value {datatype}")
+		name2 = "Unknown datatype"
+
+
+	sorttype_to_suffix = {
+	0: "TS",  # Technology sort
+	1: "TFP",  # Farm size sort: TFP fixed effect
+	2: "HS",  # Farm size sort: herd size
+	3: "DA",  # Farm size sort: debt/asset ratio
+	}
+
+	if sorttype in sorttype_to_suffix:
+		name2 += sorttype_to_suffix[sorttype]
+	else:
+		# Handle potential unknown vartype values
+		print(f"Warning: Unknown sorttype value {sorttype}")
+		name2 += "Unknown sort"
+
+	if quants_j == 0:
+		iQunt = 1
+		qnum_j = quants_j.shape[0]  # Get number of rows (quantiles)
+	else:
+		iQunt = 0
+		qnum_j = 0  # Set number of quantiles to 0	
+
+	# Assuming avgage, minc, maxc, seqa, getorders are defined
+
+# Calculate age range
+	_tr2 = np.max(avgage, axis=0) - np.min(avgage, axis = 0) + numyrs_j + 5
+	age_seq2 = np.arange(minc(avgage) - 2, _tr2 + 1)  # Use numpy.arange for sequence
+
+	# Extract maturity years
+	mmtyrs = getorders(dataprfs)[4]  # Assuming getorders returns a list/array
+
+	# Create sequence of maturity years
+	mmtcols = np.arange(1, mmtyrs + 1)  # Use numpy.arange for sequence
+
+
+def makgrph2(quants_j, FSnum_j, chrtnum_j, grphtype, sorttype):
+	"""
+	This is the massive Goodness-of-fit plotting function. Its a wrapper for the settings 
+	for the 18 graphs that we can make. Very annoying. Uses input from grphmtx (graph matrix)
+
+	Args:
+	quants_j: (array-like) Quantiles (possibly from previous step)
+	FSnum_j: (int) Number of firms (or a related count)
+	chrtnum_j: (int) Chart number (for potential identification)
+	grphtype: (str) Graph type (e.g., 'bar', 'line')
+	sorttype: (str) Sorting type for data (e.g., 'asc', 'desc')
+	"""
+	# Handle grphtype argument
+	
+	type_map = {
+	1: ("Capital", "totK"),
+	2: ("Owned Capital", "ownK"),
+	3: ("Total Assets", "TA"),
+	4: ("Debt", "D"),
+	5: ("Equity", "E"),
+	6: ("Int. Goods", "IG"),
+	7: ("Gross Invst", "GI"),
+	8: ("Dividends", "DV"),
+	9: ("Output", "Y"),
+	10: ("Cashflow", "CF"),
+	11: ("Leased/Total Ratio", "LTK"),
+	12: ("Debt/Asset Ratio", "DA"),
+	13: ("N/K Ratio", "NK"),
+	14: ("GI/K Ratio", "GIK"),
+	15: ("NI/K Ratio", "NIK"),
+	16: ("Cash/Asset Ratio", "CA"),
+	17: ("Output/Capital Ratio", "YK"),
+	18: ("Dividend Growth", "DVG"),
+	}
+
+	if grphtype in type_map:
+		typestr, typestr2 = type_map[grphtype]
+	else:
+		# Handle potential unknown grphtype values (optional)
+		print(f"Warning: Unknown grphtype value {grphtype}")
+		typestr, typestr2 = "Unknown", "Unknown"
+
+	print(f"Generating graph for {typestr} ({typestr2})")
+
+	# Handle sorttype argument
+	sort_map = {
+	0: ("TS", "Technology"),
+	1: ("TFP", "TFP"),
+	2: ("HS", "Cows"),
+	3: ("DA", "D/A Ratio"),
+	}
+
+	if sorttype in sort_map:
+		typestr3, titlstr2 = sort_map[sorttype]
+	else:
+		# Handle potential unknown sorttype values (optional)
+		print(f"Warning: Unknown sorttype value {sorttype}")
+		typestr3, titlstr2 = "Unknown", "Unknown"
+
+	# Use typestr3 and titlstr2 for your graph generation logic
+	print(f"Sorting by {titlstr2} ({typestr3})")
+
+	# Generate titles for the code. I think the titles are a little fucked up, but let's look at that l8r.
+	title_prefix = ""
+
+	# Add "Technology" if sorting by technology
+	if sorttype == 0:
+		title_prefix += "Technology" + ": "  # Add colon after technology
+
+	# Add "Cohort" or "Cohort and" based on number of firms and charts
+	if FSnum_j > 1:
+		title_prefix += "Cohort"
+	else:
+		if chrtnum_j > 1:
+			title_prefix += "Cohort and "
+
+	# Add "by" if there's any sorting or cohort information
+	if title_prefix:
+		title_prefix += "by "
+
+	titlstr1 = title_prefix + titlstr2
+
+	# Assuming typestr, FSnum_j, typestr3, grphtype are already defined
+
+	# Combine title elements
+	titlstr1 = typestr + titlstr1  # Add variable name to title
+
+	# Format string for integer with leading zeros
+	format_string = "%0*d"  # Use 'd' for integers (adjust width as needed)
+
+	# Construct farm size string with leading zeros
+	FSstr = "_" + format_string % (1, FSnum_j) + typestr3 + "_"  # Adjust width for FSnum_j
+
+	# Set y-axis label based on graph type
+	if grphtype > 10:
+		yalabel = typestr  # Use variable name for y-axis
+	else:
+		yalabel = typestr + " (000s of 2011 dollars)"  # Add units to y-axis label
+
+	_="""
+	## This is the territory where we likely set up a bunch of matplotlib stuff ##
+	Line-thickness, Linecolors, linetypes, etc.
+	"""
+
+
+	if quants_j == 0:  
+		qnum_j = quants_j.shape[0]  # Get number of rows (quantiles)
+		iQunt = 1  # Flag set to indicate presence of quantiles
+	else:
+		qnum_j = 0  # Set number of quantiles to 0
+		iQunt = 0  # Flag set to indicate absence of quantiles
+
+	for i in range(qnum_j):  # Use range(qnum_j) for guaranteed number of iterations
+		iQunt = i + 1  # Adjust iQunt for zero-based indexing
+
+		# Set quantile string based on value
+		if iQunt == 0:
+			quntstr = "Mean "
+			quntstr2 = "avg"
+		elif quants_j[i] == 0.5:
+			quntstr = "Median "
+			quntstr2 = f"{50:.2f}"  # Format 50 as string with 2 decimal places
+		else:
+			quntstr2 = f"{100*quants_j[i]:.2f}"  # Format 100*quantile as string with 2 decimal places
+			quntstr = f"{quntstr2}th %tile "
+
+			"""
+			This is where they load in files from generated by grphmtx, pad them, and call doplot
+			"""
+
+			# Construct file name
+			#fnamestr = makename(grphpath, typestr2 + "dt" + typestr3, iQunt)
+
+			# Load data (assuming ^ is a data loading function)
+			#alldat = load_alldat(fnamestr)  # Replace ^ with your actual data loading function
+
+			# Get number of columns and rows
+			#cn = alldat.shape[1]  # Use shape for columns
+			#rn = alldat.shape[0]  # Use shape for rows
+
+			# Add extra rows for better plotting (assuming ~miss creates missing value mask)
+			#xtrarow1 = (alldat[0, 0] - 1) * ~np.isnan(np.ones((1, cn - 1)), axis=1)
+			#xtrarow2 = (alldat[rn - 1, 0] + 1) * ~np.isnan(np.ones((1, cn - 1)), axis=1)
+			#alldat = np.concatenate((xtrarow1[np.newaxis, :], alldat, xtrarow2[np.newaxis, :]), axis=0)
+
+			# Call doplot
+
+			#doplot(alldat, figtitle, figname, figdim)
+
+			# Skip to next iteration if grphtype is 11 (Leased/Total Ratio)
+			if grphtype == 11:
+				iQunt += 1
+				continue
+
+			# Assuming alldat, figtitle, figname, figdim, grphpath, typestr2, typestr3, iQunt, cn, xtrarow1, xtrarow2 are defined
+			_="""
+			# Load simulated data (assuming ^ is a data loading function)
+			fnamestr = makename(grphpath, typestr2 + "sm" + typestr3, iQunt)
+			allsim = load_allsim(fnamestr)  # Replace ^ with your actual data loading function
+
+			# Select relevant columns and add extra rows
+			allsim = allsim[:, :cn]  # Select columns 1 to cn (inclusive)
+			allsim = np.concatenate((xtrarow1[np.newaxis, :], allsim, xtrarow2[np.newaxis, :]), axis=0)
+
+			# Plot simulated data
+			doplot(allsim, figtitle, figname, figdim)
+
+			# Create combined data (assuming alldat and allsim have same number of rows)
+			allboth = np.logical_xor(alldat[:, 1:cn], allsim[:, 1:])  # Use np.logical_xor for XOR
+
+			# Plot combined data
+			doplot(allboth, figtitle, figname, figdim)
+			"""
+
+
+def doplot(alldat, figtitle, figname, figdim):
+	print(f"plot: {figtitle}!")
+
+
+################   ENTRY POINT   ########
+if __name__ == "__main__":
+	print("__name__ == '__main__'")
+	generate_all_summary_statistics()
+
+	#loadSims(parmvec)
+
 
 
 
