@@ -4,7 +4,7 @@ from pathlib import Path
 
 from getfarmdat43 import loaddat, initdist, dataprofs, datasetup, fbillvec, getTFP
 from simcrit41 import getgrids, makepvecs, tauch
-from utility_functions import load_file # Functions that get called from several files have to be moved to a third to avoid circular imports
+from utility_functions import load_file # Functions that get called from several files have to be moved to a third file to avoid 'circular imports'
 from markch import markch
 import platform
 
@@ -13,15 +13,17 @@ from functions import logitrv, logit
 
 runnumber = ""
 
-# We use os.path here to achieve platform independence (e.g. on Bertel's macbook)  
+# We use os.path here to achieve platform independence
 rootdir = os.path.dirname(__file__) # Gets base directory
 
 if platform.system() != "Windows":
-	directory_key = "/" # Unix
+	directory_key = "/" 		# Unix
+	executable_extension = ""
 else:	
-	directory_key = "\\" # Windows
+	directory_key = "\\" 		# Windows
+	executable_extension = ".exe"
 
-rulecall = os.path.join(rootdir, "iopath") + directory_key
+rulecall = os.path.join(rootdir, "ccode") + directory_key + "babyfarm18b" + executable_extension
 iopath = os.path.join(rootdir, "iopath") + directory_key
 datapath = os.path.join(rootdir, "data") + directory_key
 datapath = os.path.join(datapath, "Full_Sample") + directory_key
@@ -133,15 +135,16 @@ prefparms, finparms, gam, ag2, nshft, fcost = makepvecs(parmvec, betamax, linpre
 TFPaggshks, TFP_FE, TFPaggeffs, tkqntdat, DAqntdat, CAqntdat, nkqntdat, gikqntdat, \
 	ykqntdat, divqntdat, dvgqntdat, obsavgdat, tkqcnts, divqcnts, dvgqcnts, std_zi,\
 	zvec, fevec, k_0, optNK, optKdat, countadj = datasetup(gam, ag2, nshft, fcost, rloutput,\
-														   totcap, intgoods, obsmat, farmtype, av_cows, famsize)
+														   totcap, intgoods, obsmat, farmtype, av_cows, famsize,
+														   datawgts, chrttype, iobsmat, dvgobsmat, 
+			  												dividends, divgrowth, LTKratio, debtasst, nkratio, gikratio,
+			    											CAratio, ykratio, dumdwgts, avgage)
 
 # datadscr her. Den laver graphs! (og sorterer med TFP, men det kan vi tage senere).
 # (data describe)
 
 # getaggrph
 # get aggregate graphs her! Laver også graphs
-
- # 					HER KALDER VI VFI				#
 
 numparms = parmvec.shape[0]
 fixvals = parmvec

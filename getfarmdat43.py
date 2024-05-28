@@ -688,7 +688,10 @@ def fbillvec(std_zi, std_za):
 def datasetup(gam, ag2, nshft, fcost, rloutput, totcap, intgoods, obsmat, 
 			  farmtype, av_cows, famsize, datawgts, chrttype, iobsmat, dvgobsmat, 
 			  dividends, divgrowth, LTKratio, debtasst, nkratio, gikratio,
-			    CAratio, ykratio, dumdwgts):
+			    CAratio, ykratio, dumdwgts, avgage):
+	
+	print("datasetup")
+
 	# Local variables initialization
 	TFPaggshks, std_zi, std_fe, TFP_FE, std_za, TFPaggeffs = getTFP(rloutput, totcap, intgoods, obsmat, gam, ag2, nshft,
 																	fcost, statacrap, yrseq, firstyr, farmtype)
@@ -766,7 +769,7 @@ def datasetup(gam, ag2, nshft, fcost, rloutput, totcap, intgoods, obsmat,
 														  checktie, chrttype, obsmat, iobsmat, dvgobsmat,
 														  quants_lv, quants_rt, totcap, dividends,
 														  divgrowth, LTKratio, debtasst, nkratio, gikratio,
-														  CAratio, ykratio, dumdwgts)
+														  CAratio, ykratio, dumdwgts, avgage)
 
 	return TFPaggshks, TFP_FE, TFPaggeffs, tkqntdat, DAqntdat, CAqntdat, nkqntdat, gikqntdat, \
 		ykqntdat, divqntdat, dvgqntdat, obsavgdat, tkqcnts, divqcnts, dvgqcnts, std_zi, zvec, \
@@ -774,7 +777,9 @@ def datasetup(gam, ag2, nshft, fcost, rloutput, totcap, intgoods, obsmat,
 
 def dataprofs(FType, farmsize, FSstate, timespan, datawgts, checktie, chrttype, obsmat,
 				iobsmat, dvgobsmat, quants_lv, quants_rt, totcap, dividends, divgrowth,
-				LTKratio, debtasst, nkratio, gikratio, CAratio, ykratio, dumdwgts):
+				LTKratio, debtasst, nkratio, gikratio, CAratio, ykratio, dumdwgts, avgage):
+
+	print("dataprofs")
 
 	sorttype = 0
 	FSwgts = obsmat * datawgts
@@ -831,15 +836,17 @@ def dataprofs(FType, farmsize, FSstate, timespan, datawgts, checktie, chrttype, 
 	dvgqntdat, dvgqcnts = getqunts(chrttype, FType, divgrowth, dvgobsmat, quants_rt, timespan, datawgts)
 	obsavgdat, quantcnts = getqunts(chrttype, FType, obsmat, dumdwgts, 0, timespan, datawgts)
 
-	# grphmtx(tkqntdat, 1, 0, quants_lv, FSgroups, chrtnum, timespan, sorttype)
-	# grphmtx(divqntdat, 8, 0, quants_lv, FSgroups, chrtnum, timespan, sorttype)
-	# grphmtx(ltkqntdat, 11, 0, quants_rt, FSgroups, chrtnum, timespan, sorttype)
-	# grphmtx(DAqntdat, 12, 0, quants_rt, FSgroups, chrtnum, timespan, sorttype)
-	# grphmtx(nkqntdat, 13, 0, quants_rt, FSgroups, chrtnum, timespan, sorttype)
-	# grphmtx(gikqntdat, 14, 0, quants_rt, FSgroups, chrtnum, timespan, sorttype)
-	# grphmtx(CAqntdat, 16, 0, quants_rt, FSgroups, chrtnum, timespan, sorttype)
-	# grphmtx(ykqntdat, 17, 0, quants_rt, FSgroups, chrtnum, timespan, sorttype)
-	# grphmtx(dvgqntdat, 18, 0, quants_rt, FSgroups, chrtnum, timespan, sorttype)
+	print("calling grphmtx")
+
+	grphmtx(tkqntdat, 1, 0, quants_lv, FSgroups, chrtnum, timespan, sorttype, avgage)
+	grphmtx(divqntdat, 8, 0, quants_lv, FSgroups, chrtnum, timespan, sorttype)
+	grphmtx(ltkqntdat, 11, 0, quants_rt, FSgroups, chrtnum, timespan, sorttype)
+	grphmtx(DAqntdat, 12, 0, quants_rt, FSgroups, chrtnum, timespan, sorttype)
+	grphmtx(nkqntdat, 13, 0, quants_rt, FSgroups, chrtnum, timespan, sorttype)
+	grphmtx(gikqntdat, 14, 0, quants_rt, FSgroups, chrtnum, timespan, sorttype)
+	grphmtx(CAqntdat, 16, 0, quants_rt, FSgroups, chrtnum, timespan, sorttype)
+	grphmtx(ykqntdat, 17, 0, quants_rt, FSgroups, chrtnum, timespan, sorttype)
+	grphmtx(dvgqntdat, 18, 0, quants_rt, FSgroups, chrtnum, timespan, sorttype)
 
 	return tkqntdat, DAqntdat, CAqntdat, nkqntdat, gikqntdat, ykqntdat, divqntdat, dvgqntdat, obsavgdat, tkqcnts, divqcnts, dvgqcnts, countadj
 
@@ -962,6 +969,9 @@ def grphmtx(dataprfs, vartype, datatype, quants_j, FSnum_j, chrtnum_j, numyrs_j,
 		numyrs_j: (int) Number of years (relevant data period)
 		sorttype: (str) Sorting type for data (e.g., 'asc', 'desc')
 	"""
+
+	print("------------- GRAPHMTX ------------")
+
 	vartype_to_name = {
 	1: "totK",
 	2: "ownK",
@@ -1024,10 +1034,8 @@ def grphmtx(dataprfs, vartype, datatype, quants_j, FSnum_j, chrtnum_j, numyrs_j,
 		iQunt = 0
 		qnum_j = 0  # Set number of quantiles to 0	
 
-	# Assuming avgage, minc, maxc, seqa, getorders are defined
-
 	# Calculate age range
-	_tr2 = np.max(avgage, axis=0) - np.min(avgage, axis = 0) + numyrs_j + 5
+	_tr2 = int(np.max(avgage, axis=0) - np.min(avgage, axis = 0) + numyrs_j + 5)
 	age_seq2 = np.arange(np.min(avgage, axis=0) - 2, _tr2 + 1)  # Use numpy.arange for sequence
 
 	# Extract maturity years
@@ -1037,34 +1045,34 @@ def grphmtx(dataprfs, vartype, datatype, quants_j, FSnum_j, chrtnum_j, numyrs_j,
 	mmtcols = np.arange(1, mmtyrs + 1)  # Use numpy.arange for sequence
 
 	for iQunt in range(qnum_j + 1):  # Loop through quantiles (including 0 for means)
-		name3 = f"{iQunt:0.0lf}"  # Format quantile number as string
+		name3 = f"{iQunt}"  # Format quantile number as string
 
-	# Initialize graph matrix with missing values
-		gmat = np.ones((_tr2, chrtnum_j * FSnum_j)) * np.missing(0)  # Missing value representation
+		# Initialize graph matrix with missing values
+		gmat = np.ones((_tr2, chrtnum_j * FSnum_j)) * np.NaN  # Missing value representation
 
-	# Track ages with observations
+		# Track ages with observations
 		gotsome = np.zeros((_tr2, 1))
 
 		cn = 1  # Column counter
 
-		for iChrt in range(1, chrtnum_j + 1):  # Loop through charts
-			for iFS in range(1, FSnum_j + 1):  # Loop through firms
+		for iChrt in range(0, chrtnum_j):  # Loop through charts
+			for iFS in range(0, FSnum_j):  # Loop through firms
 				if iQunt == 0:
 					# Means case
-					getmatrix_parameters = np.array([iChrt, iFS, 1])
+					getmatrix_parameters = np.array([iChrt, iFS, 0]) # -1 til eksponent her
 				else:
 					# Quantile case
 					getmatrix_parameters = np.array([iChrt, iFS, iQunt])
 					
 				# Handle missing values
 				tempprf = getmatrix(dataprfs, getmatrix_parameters)  # Assuming getmatrix function
-				tempprf = np.where(tempprf == mvcode, np.missing(0), tempprf)
+				tempprf = np.where(tempprf == mvcode, np.NaN, tempprf)
 
 				cn += 1
-				rn = mmtyrs + avgage[iChrt - 1] - np.min(age_seq2, axis=0)  # Calculate row indices
+				rn = int(mmtyrs + avgage[iChrt - 1] - np.min(age_seq2, axis=0))  # Calculate row indices
 
 				# Track ages with observations
-				gotsome[rn] = np.ones(mmtyrs.shape[0])
+				gotsome[rn] = np.ones((mmtyrs,1)).flatten() # gotsome[rn] is shape (1,), while RHS is (11,). hmm...
 
 		# Fill graph matrix
 		gmat[rn, cn - 1] = tempprf.T  # Transpose for row-wise storage
