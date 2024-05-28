@@ -1,19 +1,34 @@
 import numpy as np
+import os
+from pathlib import Path
+
 from getfarmdat43 import loaddat, initdist, dataprofs, datasetup, fbillvec, getTFP
 from simcrit41 import getgrids, makepvecs, tauch
+from utility_functions import load_file # Functions that get called from several files have to be moved to a third to avoid circular imports
 from markch import markch
+import platform
 
 from variables import *
 from functions import logitrv, logit
 
-# We can automate this! :)
-rootdir = r"C:\Users\Simon\Downloads\Jones_Pratap_AER_2017-0370_Archive\Jones_Pratap_AER_2017-0370_Archive\estimation_fake_copy"
 runnumber = ""
-datapath = rootdir + "data\\Full_Sample\\"
-grphpath = rootdir + "graphs\\"
-iopath = rootdir + "iofiles\\"
-bootpath = rootdir + "bootlock\\"
-rulecall = rootdir + "ccode\\babyfarm18b\\x64\\debug\\babyfarm18b.exe"
+
+# We use os.path here to achieve platform independence (e.g. on Bertel's macbook)  
+rootdir = os.path.dirname(__file__) # Gets base directory
+
+if platform.system() != "Windows":
+	directory_key = "/" # Unix
+else:	
+	directory_key = "\\" # Windows
+
+rulecall = os.path.join(rootdir, "iopath") + directory_key
+iopath = os.path.join(rootdir, "iopath") + directory_key
+datapath = os.path.join(rootdir, "data") + directory_key
+datapath = os.path.join(datapath, "Full_Sample") + directory_key
+grphpath = os.path.join(rootdir, "graphs") + directory_key
+bootpath = os.path.join(rootdir, "bootlock") + directory_key
+
+print(f"iopath: {iopath}")
 
 outfile = rootdir + "babyfarm42b_cash.out"
 output_file = open(outfile, "w")

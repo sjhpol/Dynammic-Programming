@@ -2,33 +2,16 @@ import numpy as np
 import os
 from pathlib import Path
 
+
 import pandas as pd
 from scipy.stats import norm
 
 from simcrit41 import getchrt, getcorrs, getqunts, tauch, FSquant, makepvecs
 from markch import markch
+from utility_functions import load_file, removeFE # we move this out to resolve a circular import.
 from variables import *
 #from babyfarm42b_cash import parmvec
 import matplotlib.pyplot as plt
-
-
-def removeFE(datamat_j, obsmat_j):
-	# Calculate the sum of observations for each individual
-	obscounts = np.sum(obsmat_j, axis=1)
-
-	# Calculate the sum of observed data for each individual
-	obssums = np.sum(datamat_j * obsmat_j, axis=1)
-
-	# Calculate fixed effects values
-	FEvals = obssums / obscounts
-
-	# Extend fixed effects values to the shape of the data matrix
-	FEmtx = obsmat_j * FEvals[:, np.newaxis]
-
-	# Remove fixed effects from the data matrix
-	datamat_dm = datamat_j - FEmtx
-
-	return datamat_dm, FEvals
 
 
 def loaddat(nyrsdat, lsdadj, cashtfp, chrtnum, chrtstep, sizescreen, wgtddata):
@@ -919,39 +902,55 @@ def return_individual_sum_stats(statistic, mvcode=-99):
 
     return np.array((mean, median, std, min, max))
 
-def load_file(filename, subdir="iofiles", ndmin=1):
-  """Loads data from a file in a subdirectory into a NumPy array of floats.
-
-  Args:
-      filename (str, optional): The name of the data file.
-      subdir (str, optional): The name of the subdirectory containing the data. Defaults to "iofiles".
-
-  Returns:
-      A NumPy array containing the data from the file, or None if the file
-      is not found or an error occurs during loading.
-  """
-
-  # Construct the full path to the file
-  this_directory = os.path.dirname(__file__)
-  full_subdir = os.path.join(this_directory, subdir)
-  filepath = os.path.join(full_subdir, filename)
-  
-  try:
-    data = np.loadtxt(filepath, dtype=float)
-    return data
-  except FileNotFoundError:
-    print(f"Error: File '{filepath}' not found.")
-    return None
 
 def comparison_graph(simulated_series, real_series):
 	# Given a time series of simulated and real data, where the x-axis is age, 
 	# and the y-axis is given by the input, output two graphs
 	pass
 
-def grphmtx(dataprfs, vartype, datatype, quants_j, FSnum_j, chrtnum_j, numyrs_j, sorttype):
+def getmatrix(a, loc):
+  """
+  Gets a contiguous matrix from an N-dimensional array.
+
+  Args:
+      a (N-dimensional array): The input array.
+      loc (Mx1 vector): The indices into the array to locate the matrix of interest.
+                          M can be N, N-1, or N-2.
+
+  Returns:
+      y (KxL matrix or 1xL matrix or scalar): The extracted matrix or scalar value.
+          K is the size of the second fastest moving dimension, and L is the size
+          of the fastest moving dimension.
+
+  Raises:
+      ValueError: If the dimensions of `loc` are not compatible with `a`.
+  """
+    
+  # Handle edge cases: M = N (extract entire array)
+  if loc.shape[0] == a.ndim:
+    return a
+
+  # Handle M = N-1 (extract a subarray along the last dimension)
+  if loc.shape[0] == a.ndim - 1:
+    sliced_array = a[tuple(loc)]
+    if sliced_array.ndim == 1:
+      return sliced_array.reshape(1, -1)  # Ensure row vector for consistency
+    else:
+      return sliced_array
+
+  # Handle M = N-2 (extract a submatrix along the last two dimensions)
+  if loc.shape[0] == a.ndim - 2:
+    return a[tuple(loc)]
+
+  # Raise an error for unsupported cases (M < N-2 or M > N)
+  raise ValueError("Unsupported value for M. loc must have length N, N-1, or N-2.")
+
+
+def grphmtx(dataprfs, vartype, datatype, quants_j, FSnum_j, chrtnum_j, numyrs_j, sorttype, avgage):
 	"""
 	WIP.
-	This function shapes the data how we want it. Core to making graphs. 
+	This function shapes the data how we want it. Core to making graphs.
+	We modify the args to avoid scope problems. 
 
 	Args:
 		dataprfs: (array-like) Data profiles (possibly from previous steps)
@@ -1027,16 +1026,68 @@ def grphmtx(dataprfs, vartype, datatype, quants_j, FSnum_j, chrtnum_j, numyrs_j,
 
 	# Assuming avgage, minc, maxc, seqa, getorders are defined
 
-# Calculate age range
+	# Calculate age range
 	_tr2 = np.max(avgage, axis=0) - np.min(avgage, axis = 0) + numyrs_j + 5
-	age_seq2 = np.arange(minc(avgage) - 2, _tr2 + 1)  # Use numpy.arange for sequence
+	age_seq2 = np.arange(np.min(avgage, axis=0) - 2, _tr2 + 1)  # Use numpy.arange for sequence
 
 	# Extract maturity years
-	mmtyrs = getorders(dataprfs)[4]  # Assuming getorders returns a list/array
+	mmtyrs = dataprfs.shape[3]  # 'getorders' corresponds to np.shape. -1 bc GAUSS-indexing.
 
 	# Create sequence of maturity years
 	mmtcols = np.arange(1, mmtyrs + 1)  # Use numpy.arange for sequence
 
+	for iQunt in range(qnum_j + 1):  # Loop through quantiles (including 0 for means)
+		name3 = f"{iQunt:0.0lf}"  # Format quantile number as string
+
+	# Initialize graph matrix with missing values
+		gmat = np.ones((_tr2, chrtnum_j * FSnum_j)) * np.missing(0)  # Missing value representation
+
+	# Track ages with observations
+		gotsome = np.zeros((_tr2, 1))
+
+		cn = 1  # Column counter
+
+		for iChrt in range(1, chrtnum_j + 1):  # Loop through charts
+			for iFS in range(1, FSnum_j + 1):  # Loop through firms
+				if iQunt == 0:
+					# Means case
+					getmatrix_parameters = np.array([iChrt, iFS, 1])
+				else:
+					# Quantile case
+					getmatrix_parameters = np.array([iChrt, iFS, iQunt])
+					
+				# Handle missing values
+				tempprf = getmatrix(dataprfs, getmatrix_parameters)  # Assuming getmatrix function
+				tempprf = np.where(tempprf == mvcode, np.missing(0), tempprf)
+
+				cn += 1
+				rn = mmtyrs + avgage[iChrt - 1] - np.min(age_seq2, axis=0)  # Calculate row indices
+
+				# Track ages with observations
+				gotsome[rn] = np.ones(mmtyrs.shape[0])
+
+		# Fill graph matrix
+		gmat[rn, cn - 1] = tempprf.T  # Transpose for row-wise storage
+
+		# Remove rows with no observations
+		gmat = gmat[gotsome.flatten() == 1, :]
+		ageseq3 = age_seq2[gotsome.flatten() == 1]
+
+		# Interpolation for missing values within columns
+		for col in range(1, gmat.shape[1]):
+			gmat[:, col] = np.interp(ageseq3, age_seq2, gmat[:, col], where=np.isnan(gmat[:, col]))
+	
+	
+	grphpath = "..." ### PLACEHOLDER
+
+	# Create filenames and save graph matrices
+	fnamestr = grphpath + name1 + name2 + name3
+	np.save(fnamestr, gmat)
+
+	if datatype == 1 and basecase:  # Assuming datatype and basecase are defined
+	# Save for comparison graphs
+		fnamestr = grphpath + name1 + name2 + "bn" + name3
+		np.save(fnamestr, gmat)
 
 def makgrph2(quants_j, FSnum_j, chrtnum_j, grphtype, sorttype):
 	"""
