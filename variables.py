@@ -115,3 +115,13 @@ datapath = os.path.join(rootdir, "data")
 datapath = os.path.join(datapath, "Full_Sample") + directory_key
 grphpath = os.path.join(rootdir, "graphs") + directory_key
 outputpath = os.path.join(rootdir, "output") + directory_key
+
+# you need to have the vfi output folder locally
+if os.getlogin() == "jomo0":
+	VFI_path = r"C:\Users\jomo0\OneDrive\Skrivebord\dp_upch\VFI_output"
+elif os.getlogin() == "":
+	VFI_path =
+elif os.getlogin() == "":
+	VFI_path =
+else:
+	raise EnvironmentError("User not recognized. Please set the correct path.")

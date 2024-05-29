@@ -1134,8 +1134,6 @@ void simulation(double *initAges, double *initYears, double *initCapital, double
                 int iSimmin, int iSimmax);
 """
 
-VFI_path = "C:\\Users\\jomo0\\OneDrive\\Skrivebord\\dp_upch\\VFI_output\\" # change to your path
-
 feValues = np.load(VFI_path + "feValues.npy")
 zValues = np.load(VFI_path + "zValues.npy")
 totassetvec = np.load(VFI_path + "totassetvec.npy")
