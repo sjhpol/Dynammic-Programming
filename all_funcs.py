@@ -1183,7 +1183,14 @@ def onerun(parmvec, betamax, linprefs, nobeq, w_0, bigR, numFTypes, inadaU, nons
 	optNK = optNK[randrows]  # Ensure `randrows` is defined
 
 	# Save intermediate results, replace `save_path` with actual save logic if needed
-	# save_results(iopath, job, pref_parms, fin_parms, zvec, fevec, zshks, feshks)
+	np.savetxt('iofiles/job.txt', job)
+	np.savetxt('iofiles/pref_parms.txt', pref_parms)
+	np.savetxt('iofiles/fin_parms.txt', fin_parms)
+	np.savetxt('iofiles/zvec.txt', zvec)
+	np.savetxt('iofiles/fevec.txt', fevec)
+	np.savetxt('iofiles/zshks.txt', zshks)
+	np.savetxt('iofiles/feshks.txt', feshks)
+	np.savetxt('iofiles/fevec.txt', fevec)
 
 	### TODO: HERE THEY CALL THE C PROGRAM
 	## Add the python version of the C

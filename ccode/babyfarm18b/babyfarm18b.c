@@ -336,18 +336,18 @@ int main(int argc, char *argv[])
    sizevecPtr     = readDoubleList(strcat(strcpy(fullpath,rootdir),"sizevec.txt")); 
    prefvecPtr     = readDoubleList(strcat(strcpy(fullpath,rootdir),"prefparms.txt"));
    finvecPtr      = readDoubleList(strcat(strcpy(fullpath,rootdir),"finparms.txt"));  
-   assetPtr       = readDoubleList(strcat(strcpy(fullpath,rootdir),"assetvec.txt"));
-   equityPtr      = readDoubleList(strcat(strcpy(fullpath,rootdir),"equityvec.txt"));
-   totassetPtr    = readDoubleList(strcat(strcpy(fullpath,rootdir),"totassetvec.txt"));
-   debtPtr        = readDoubleList(strcat(strcpy(fullpath,rootdir),"debtvec.txt"));
-   capitalPtr     = readDoubleList(strcat(strcpy(fullpath, rootdir),"capitalvec.txt")); 
-   lagcapPtr      = readDoubleList(strcat(strcpy(fullpath,rootdir),"lagcapvec.txt"));
-   NKratioPtr     = readDoubleList(strcat(strcpy(fullpath,rootdir),"NKratiovec.txt"));
-   cashPtr        = readDoubleList(strcat(strcpy(fullpath,rootdir),"cashvec.txt"));
+   assetPtr       = readDoubleList(strcat(strcpy(fullpath,rootdir),"Astate.txt"));
+   equityPtr      = readDoubleList(strcat(strcpy(fullpath,rootdir),"Estate.txt"));
+   totassetPtr    = readDoubleList(strcat(strcpy(fullpath,rootdir),"TAstate.txt"));
+   debtPtr        = readDoubleList(strcat(strcpy(fullpath,rootdir),"Bstate.txt"));
+   capitalPtr     = readDoubleList(strcat(strcpy(fullpath, rootdir),"Kstate.txt"));
+   lagcapPtr      = readDoubleList(strcat(strcpy(fullpath,rootdir),"lagKstate.txt"));
+   NKratioPtr     = readDoubleList(strcat(strcpy(fullpath,rootdir),"NKstate.txt"));
+   cashPtr        = readDoubleList(strcat(strcpy(fullpath,rootdir),"Cstate.txt"));
    zvecPtr        = readDoubleList(strcat(strcpy(fullpath,rootdir),"zvec.txt"));
    fevecPtr       = readDoubleList(strcat(strcpy(fullpath,rootdir),"fevec.txt"));
    gkvecPtr       = readDoubleList(strcat(strcpy(fullpath,rootdir),"gkvec.txt"));
-   wageprofilePtr = readDoubleList(strcat(strcpy(fullpath,rootdir),"wageprofilevec.txt"));
+   wageprofilePtr = readDoubleList(strcat(strcpy(fullpath,rootdir),"wprof.txt"));
 
    assetvec       = assetPtr.data;
    equityvec      = equityPtr.data;

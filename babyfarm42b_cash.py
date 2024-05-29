@@ -57,8 +57,17 @@ dumdwgts = np.ones_like(datawgts)
 dumswgts = np.ones((numsims, timespan))
 
 # Save variables to path
-# save path =^iopath agevec, sizevec, gkvec;
-# save path =^iopath Astate, Estate, TAstate, Bstate, Kstate, lagKstate, NKState, Cstate;
+np.savetxt('iofiles/agevec.txt', agevec)
+np.savetxt('iofiles/sizevec.txt', sizevec)
+np.savetxt('iofiles/gkvec.txt', gkvec)
+np.savetxt('iofiles/Astate.txt', Astate)
+np.savetxt('iofiles/Estate.txt', Estate)
+np.savetxt('iofiles/TAstate.txt', TAstate)
+np.savetxt('iofiles/Bstate.txt', Bstate)
+np.savetxt('iofiles/Kstate.txt', Kstate)
+np.savetxt('iofiles/lagKstate.txt', lagKstate)
+np.savetxt('iofiles/NKState.txt', NKState)
+np.savetxt('iofiles/Cstate.txt', Cstate)
 
 # Baseline parameters
 bta = logitrv(np.array([0.972874, 0.999723, 1.000921, 0.967146, 0.972585, 0.972849, 1.000325, 0.972860, 0.980321, 1.0084573, 0.973077])/betamax)
@@ -125,7 +134,7 @@ fixlam = 1  # 1=> do not estimate liquidation penalty
 
 finparms0 = np.array([r_rf, bigR, bigG, gkE, noReneg, numFTypes])
 
-# save path =^iopath wprof;
+np.savetxt('iofiles/wprof.txt', wprof)
 
 # Clear variables
 del bta, nu, c_0, cfloor, chi0, finalMPC, c_bar, alp, gam0, nshft0, lam, phi, zta, fcost0, colcnst
