@@ -777,6 +777,7 @@ def datasetup(gam, ag2, nshft, fcost, rloutput, totcap, intgoods, obsmat,
 		ykqntdat, divqntdat, dvgqntdat, obsavgdat, tkqcnts, divqcnts, dvgqcnts, std_zi, zvec, \
 		fevec, k_0, optNK, optKdat, countadj
 
+# Data processing farm size
 def dataprofs(FType, farmsize, FSstate, timespan, datawgts, checktie, chrttype, obsmat,
 				iobsmat, dvgobsmat, quants_lv, quants_rt, totcap, dividends, divgrowth,
 				LTKratio, debtasst, nkratio, gikratio, CAratio, ykratio, dumdwgts, avgage):
@@ -829,7 +830,7 @@ def dataprofs(FType, farmsize, FSstate, timespan, datawgts, checktie, chrttype, 
 
 	tkqntdat, tkqcnts = getqunts(chrttype, FType, totcap, obsmat, quants_lv, timespan, datawgts)
 	divqntdat, divqcnts = getqunts(chrttype, FType, dividends, obsmat, quants_lv, timespan, datawgts)
-	ltkqntdat, quantcnts = getqunts(chrttype, FType, LTKratio, obsmat, quants_rt, timespan, datawgts)
+	#ltkqntdat, quantcnts = getqunts(chrttype, FType, LTKratio, obsmat, quants_rt, timespan, datawgts)
 	DAqntdat, quantcnts = getqunts(chrttype, FType, debtasst, obsmat, quants_rt, timespan, datawgts)
 	nkqntdat, quantcnts = getqunts(chrttype, FType, nkratio, obsmat, quants_rt, timespan, datawgts)
 	gikqntdat, quantcnts = getqunts(chrttype, FType, gikratio, iobsmat, quants_rt, timespan, datawgts)
@@ -838,15 +839,23 @@ def dataprofs(FType, farmsize, FSstate, timespan, datawgts, checktie, chrttype, 
 	dvgqntdat, dvgqcnts = getqunts(chrttype, FType, divgrowth, dvgobsmat, quants_rt, timespan, datawgts)
 	obsavgdat, quantcnts = getqunts(chrttype, FType, obsmat, dumdwgts, 0, timespan, datawgts)
 
-	print("calling grphmtx")
+	print("------ calling grphmtx for real data -------")
 
-	graphmatrix = {}
-
-	for var in [(tkqntdat, 1), (divqntdat,8), (ltkqntdat,11), (DAqntdat,12), (nkqntdat,13), (gikqntdat,14), (CAqntdat,16), (ykqntdat,17), (dvgqntdat,18)]:
-		key, graph = grphmtx(var[0], var[1], 0, quants_lv, FSgroups, chrtnum, timespan, sorttype, avgage)
-		graphmatrix[key] = graph
+	real_data_matrixes = {} # 
 	
-	print(graphmatrix)
+	# Rigtig data!!#
+	for var in [(tkqntdat, 1, quants_lv), 
+			 (divqntdat,8, quants_lv), 
+			 (DAqntdat,12, quants_rt), 
+			 (nkqntdat,13, quants_rt), 
+			 (gikqntdat,14, quants_rt), 
+			 (CAqntdat,16, quants_rt), 
+			 (ykqntdat,17,quants_rt), 
+			 (dvgqntdat,18,quants_rt)]:
+		key, graph = grphmtx(var[0], var[1], 0, var[2], FSgroups, chrtnum, timespan, sorttype, avgage)
+		real_data_matrixes[key] = graph
+	
+	print(real_data_matrixes)
 	
 	return tkqntdat, DAqntdat, CAqntdat, nkqntdat, gikqntdat, ykqntdat, divqntdat, dvgqntdat, obsavgdat, tkqcnts, divqcnts, dvgqcnts, countadj
 
@@ -909,7 +918,6 @@ def return_individual_sum_stats(statistic, mvcode=-99):
 
     return np.array((mean, median, std, min, max))
 
-
 def comparison_graph(simulated_series, real_series):
 	# Given a time series of simulated and real data, where the x-axis is age, 
 	# and the y-axis is given by the input, output two graphs
@@ -951,191 +959,6 @@ def getmatrix(a, loc):
 
   # Raise an error for unsupported cases (M < N-2 or M > N)
   raise ValueError("Unsupported value for M. loc must have length N, N-1, or N-2.")
-
-def fill_missing_values(x, age_seq2):
-  """
-  Fills missing values (represented by `mv`) in `x` using linear interpolation
-  based on `age_seq2`.
-
-  Args:
-      x: (array-like) Data array with missing values.
-      age_seq2: (array-like) Age sequence corresponding to data points in `x`.
-
-  Returns:
-      array-like: The array `x` with missing values filled using interpolation.
-  """
-
-  mv = np.nan  # Missing value representation
-  rn = len(x)  # Number of rows
-
-  for i in range(1, rn-1):
-    # Check if current element is missing and previous element is valid
-    if np.isnan(x[i]) and not np.isnan(x[i - 1]):
-      j = i + 1
-      # Find the next valid element after the missing one
-      while j < rn-1 and np.isnan(x[j]):
-        j += 1
-
-      # If a valid element is found within the data range
-      if j <= rn:
-        # Calculate interpolation fraction
-        frac = (age_seq2[i] - age_seq2[i - 1]) / (age_seq2[j] - age_seq2[i - 1])
-        # Interpolate the missing value
-        x[i] = x[i - 1] + frac * (x[j] - x[i - 1])
-
-  return x
-
-def grphmtx(dataprfs, vartype, datatype, quants_j, FSnum_j, chrtnum_j, numyrs_j, sorttype, avgage):
-	"""
-	This function shapes the data how we want it. Core to making graphs.
-	We modify the args to avoid scope problems. 
-
-	Args:
-		dataprfs: (array-like) Data profiles (possibly from previous steps)
-		vartype: (str) Variable type (e.g., 'Y', 'D')
-		datatype: (str) Data type (e.g., 'L', 'C')
-		quants_j: (array-like) Quantiles (possibly from previous step)
-		FSnum_j: (int) Number of firms (or a related count)
-		chrtnum_j: (int) Chart number (for potential identification)
-		numyrs_j: (int) Number of years (relevant data period)
-		sorttype: (str) Sorting type for data (e.g., 'asc', 'desc')
-	"""
-
-	print("------------- GRAPHMTX ------------")
-
-	vartype_to_name = {
-	1: "totK",
-	2: "ownK",
-	3: "TA",
-	4: "D",
-	5: "IG",
-	6: "GI",
-	7: "NI",
-	8: "DV",
-	9: "Y",
-	10: "CF",
-	11: "LTK",
-	12: "DA",
-	13: "NK",
-	14: "GIK",
-	15: "NIK",
-	16: "CA",
-	17: "YK",
-	18: "DVG",
-	}
-
-	if vartype in vartype_to_name:
-		name1 = vartype_to_name[vartype]
-	else:
-		# Handle potential unknown vartype values
-		print(f"Warning: Unknown vartype value {vartype}")
-		name1 = "Unknown vartype"
-
-	datatype_to_suffix = {
-	0: "dt",  # Data
-	1: "sm",  # Simulation
-	}
-
-	if datatype in datatype_to_suffix:
-		name2 = datatype_to_suffix[datatype]
-	else:
-		# Handle potential unknown vartype values
-		print(f"Warning: Unknown datatype value {datatype}")
-		name2 = "Unknown datatype"
-
-
-	sorttype_to_suffix = {
-	0: "TS",  # Technology sort
-	1: "TFP",  # Farm size sort: TFP fixed effect
-	2: "HS",  # Farm size sort: herd size
-	3: "DA",  # Farm size sort: debt/asset ratio
-	}
-
-	if sorttype in sorttype_to_suffix:
-		name2 += sorttype_to_suffix[sorttype]
-	else:
-		# Handle potential unknown vartype values
-		print(f"Warning: Unknown sorttype value {sorttype}")
-		name2 += "Unknown sort"
-
-	if quants_j == 0:
-		iQunt = 0
-		qnum_j = 0  # Set number of quantiles to 0	
-	else:
-		iQunt = 1
-		#qnum_j = quants_j.shape[0]  # Get number of rows (quantiles)
-		qnum_j = 1
-
-	# Calculate age range
-	_tr2 = int(np.max(avgage, axis=0) - np.min(avgage, axis = 0) + numyrs_j + 5)
-	age_seq2 = np.arange(np.min(avgage, axis=0) - 2, np.min(avgage, axis=0) - 2 + _tr2, dtype=int)  # Use numpy.arange for sequence
-	#age_seq2 = age_seq2.reshape(-1,1)
-	# Extract maturity years
-	mmtyrs = dataprfs.shape[3]  # 'getorders' corresponds to np.shape. -1 bc GAUSS-indexing.
-
-	# Create sequence of maturity years
-	mmtcols = np.arange(1, mmtyrs + 1)  # Use numpy.arange for sequence
-
-	# Sorry.
-	while iQunt < (qnum_j + 1):  # Loop through quantiles (including 0 for means)
-		name3 = f"{iQunt+1}"  # Format quantile number as string
-
-		# Initialize graph matrix with missing values
-		gmat = np.ones((_tr2, chrtnum_j * FSnum_j)) * np.NaN  # Missing value representation
-		gmat = np.column_stack((age_seq2, gmat))
-		print(gmat.shape)
-
-		# Track ages with observations
-		gotsome = np.zeros((_tr2, 1), dtype=int)
-
-		cn = 0  # Column counter
-
-		for iChrt in range(chrtnum_j):  # Loop through charts
-			for iFS in range(FSnum_j):  # Loop through firms
-				if iQunt == 0:
-					# Means case
-					print("Means case")
-					getmatrix_parameters = np.array([iChrt, iFS, 0]) # -1 til eksponent her
-				else:
-					# Quantile case
-					print("Quantile case") 
-					getmatrix_parameters = np.array([iChrt, iFS, iQunt-1]) 
-					
-				# Handle missing values
-				tempprf = getmatrix(dataprfs, getmatrix_parameters)  # 11x1
-				tempprf = np.where(tempprf == mvcode, np.NaN, tempprf) 
-
-				cn += 1
-				
-				rn = mmtcols + avgage[iChrt] - np.min(age_seq2, axis=0) # rn (11x1)
-				rn = rn.astype(int)
-				# Track ages with observations
-				gotsome[rn] = np.ones((mmtyrs, 1))
-
-				# Fill graph matrix
-				print(f"gmat cn {cn}")
-				gmat[rn-1, cn] = (tempprf).flatten()  # Transpose for row-wise storage. 
-		
-		# Remove rows with no observations
-		is_all_nan = np.all(np.isnan(gmat[:, -4:]), axis=1)
-		gmat = gmat[~is_all_nan]
-
-		# Final ageseq is all years alive where there's not missing data. #
-		ageseq3 = gmat[:,0].astype(int)  # Use gotsome.flatten() for indexing
-
-        # Interpolation for missing values within columns
-		for col in range(1, gmat.shape[1]):
-			gmat[:,cn] = fill_missing_values(gmat[:,cn],ageseq3-1)		#     @- missing values -@
-
-		iQunt += 1
-	
-	fnamestr = name1 + name2 + name3
-	print("\n")
-	print(fnamestr)
-	print("\n")
-	print(gmat)
-	
-	return (fnamestr, gmat)
 
 def makgrph2(quants_j, FSnum_j, chrtnum_j, grphtype, sorttype):
 	"""
@@ -1218,8 +1041,6 @@ def makgrph2(quants_j, FSnum_j, chrtnum_j, grphtype, sorttype):
 		title_prefix += "by "
 
 	titlstr1 = title_prefix + titlstr2
-
-	# Assuming typestr, FSnum_j, typestr3, grphtype are already defined
 
 	# Combine title elements
 	titlstr1 = typestr + titlstr1  # Add variable name to title

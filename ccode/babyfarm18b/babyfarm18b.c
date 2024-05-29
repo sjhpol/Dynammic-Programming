@@ -20,8 +20,6 @@
 
 #include <omp.h> // Open MP
 
-// #define max(x,y) ((x) > (y) ? (x) : (y)) // i am scared of pre-compilation macros (ex: max(x++, y) ).
-
 // Disable warning messages 4996 
 #pragma warning( once : 4996 )
 

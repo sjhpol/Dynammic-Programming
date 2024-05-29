@@ -1014,10 +1014,229 @@ def loadSims(fcost, gam, ag2, nshft, k_0, optNK, timespan, numsims, cashlag, tfp
 			DVKratioSim, profitSim, netWorthSim, avxerr, ftype_sim)
 
 
+def grphmtx(dataprfs, vartype, datatype, quants_j, FSnum_j, chrtnum_j, numyrs_j, sorttype, avgage):
+	"""
+	This function shapes the data how we want it. Core to making graphs.
+	We modify the args to avoid scope problems. 
+
+	Args:
+		dataprfs: (array-like) Data profiles (possibly from previous steps)
+		vartype: (str) Variable type (e.g., 'Y', 'D')
+		datatype: (str) Data type (e.g., 'L', 'C')
+		quants_j: (array-like) Quantiles (possibly from previous step)
+		FSnum_j: (int) Number of firms (or a related count)
+		chrtnum_j: (int) Chart number (for potential identification)
+		numyrs_j: (int) Number of years (relevant data period)
+		sorttype: (str) Sorting type for data (e.g., 'asc', 'desc')
+	"""
+
+	print("------------- GRAPHMTX ------------")
+
+	vartype_to_name = {
+	1: "totK",
+	2: "ownK",
+	3: "TA",
+	4: "D",
+	5: "IG",
+	6: "GI",
+	7: "NI",
+	8: "DV",
+	9: "Y",
+	10: "CF",
+	11: "LTK",
+	12: "DA",
+	13: "NK",
+	14: "GIK",
+	15: "NIK",
+	16: "CA",
+	17: "YK",
+	18: "DVG",
+	}
+
+	if vartype in vartype_to_name:
+		name1 = vartype_to_name[vartype]
+	else:
+		# Handle potential unknown vartype values
+		print(f"Warning: Unknown vartype value {vartype}")
+		name1 = "Unknown vartype"
+
+	datatype_to_suffix = {
+	0: "dt",  # Data
+	1: "sm",  # Simulation
+	}
+
+	if datatype in datatype_to_suffix:
+		name2 = datatype_to_suffix[datatype]
+	else:
+		# Handle potential unknown vartype values
+		print(f"Warning: Unknown datatype value {datatype}")
+		name2 = "Unknown datatype"
+
+
+	sorttype_to_suffix = {
+	0: "TS",  # Technology sort
+	1: "TFP",  # Farm size sort: TFP fixed effect
+	2: "HS",  # Farm size sort: herd size
+	3: "DA",  # Farm size sort: debt/asset ratio
+	}
+
+	if sorttype in sorttype_to_suffix:
+		name2 += sorttype_to_suffix[sorttype]
+	else:
+		# Handle potential unknown vartype values
+		print(f"Warning: Unknown sorttype value {sorttype}")
+		name2 += "Unknown sort"
+
+	if quants_j == 0:
+		iQunt = 0
+		qnum_j = 0  # Set number of quantiles to 0	
+	else:
+		iQunt = 1
+		#qnum_j = quants_j.shape[0]  # Get number of rows (quantiles)
+		qnum_j = 1
+
+	# Calculate age range
+	_tr2 = int(np.max(avgage, axis=0) - np.min(avgage, axis = 0) + numyrs_j + 5)
+	age_seq2 = np.arange(np.min(avgage, axis=0) - 2, np.min(avgage, axis=0) - 2 + _tr2, dtype=int)  # Use numpy.arange for sequence
+	#age_seq2 = age_seq2.reshape(-1,1)
+	# Extract maturity years
+	mmtyrs = dataprfs.shape[3]  # 'getorders' corresponds to np.shape. -1 bc GAUSS-indexing.
+
+	# Create sequence of maturity years
+	mmtcols = np.arange(1, mmtyrs + 1)  # Use numpy.arange for sequence
+
+	# Sorry.
+	while iQunt < (qnum_j + 1):  # Loop through quantiles (including 0 for means)
+		name3 = f"{iQunt+1}"  # Format quantile number as string
+
+		# Initialize graph matrix with missing values
+		gmat = np.ones((_tr2, chrtnum_j * FSnum_j)) * np.NaN  # Missing value representation
+		gmat = np.column_stack((age_seq2, gmat))
+		print(gmat.shape)
+
+		# Track ages with observations
+		gotsome = np.zeros((_tr2, 1), dtype=int)
+
+		cn = 0  # Column counter
+
+		for iChrt in range(chrtnum_j):  # Loop through charts
+			for iFS in range(FSnum_j):  # Loop through firms
+				if iQunt == 0:
+					# Means case
+					print("Means case")
+					getmatrix_parameters = np.array([iChrt, iFS, 0]) # -1 til eksponent her
+				else:
+					# Quantile case
+					print("Quantile case") 
+					getmatrix_parameters = np.array([iChrt, iFS, iQunt-1]) 
+					
+				# Handle missing values
+				tempprf = getmatrix(dataprfs, getmatrix_parameters)  # 11x1
+				tempprf = np.where(tempprf == mvcode, np.NaN, tempprf) 
+
+				cn += 1
+				
+				rn = mmtcols + avgage[iChrt] - np.min(age_seq2, axis=0) # rn (11x1)
+				rn = rn.astype(int)
+				# Track ages with observations
+				gotsome[rn] = np.ones((mmtyrs, 1))
+
+				# Fill graph matrix
+				print(f"gmat cn {cn}")
+				gmat[rn-1, cn] = (tempprf).flatten()  # Transpose for row-wise storage. 
+		
+		# Remove rows with no observations
+		is_all_nan = np.all(np.isnan(gmat[:, -4:]), axis=1)
+		gmat = gmat[~is_all_nan]
+
+		# Final ageseq is all years alive where there's not missing data. #
+		ageseq3 = gmat[:,0].astype(int)  # Use gotsome.flatten() for indexing
+
+        # Interpolation for missing values within columns
+		for col in range(1, gmat.shape[1]):
+			gmat[:,cn] = fill_missing_values(gmat[:,cn],ageseq3-1)		#     @- missing values -@
+
+		iQunt += 1
+
+	fnamestr = name1 + name2 + name3
+	
+	return (fnamestr, gmat)
+
+def getmatrix(a, loc):
+  """
+  Gets a contiguous matrix from an N-dimensional array.
+
+  Args:
+      a (N-dimensional array): The input array.
+      loc (Mx1 vector): The indices into the array to locate the matrix of interest.
+                          M can be N, N-1, or N-2.
+
+  Returns:
+      y (KxL matrix or 1xL matrix or scalar): The extracted matrix or scalar value.
+          K is the size of the second fastest moving dimension, and L is the size
+          of the fastest moving dimension.
+
+  Raises:
+      ValueError: If the dimensions of `loc` are not compatible with `a`.
+  """
+    
+  # Handle edge cases: M = N (extract entire array)
+  if loc.shape[0] == a.ndim:
+    return a
+
+  # Handle M = N-1 (extract a subarray along the last dimension)
+  if loc.shape[0] == a.ndim - 1:
+    sliced_array = a[tuple(loc)]
+    if sliced_array.ndim == 1:
+      return sliced_array.reshape(1, -1)  # Ensure row vector for consistency
+    else:
+      return sliced_array
+
+  # Handle M = N-2 (extract a submatrix along the last two dimensions)
+  if loc.shape[0] == a.ndim - 2:
+    return a[tuple(loc)]
+
+  # Raise an error for unsupported cases (M < N-2 or M > N)
+  raise ValueError("Unsupported value for M. loc must have length N, N-1, or N-2.")
+
+def fill_missing_values(x, age_seq2):
+  """
+  Fills missing values (represented by `mv`) in `x` using linear interpolation
+  based on `age_seq2`.
+
+  Args:
+      x: (array-like) Data array with missing values.
+      age_seq2: (array-like) Age sequence corresponding to data points in `x`.
+
+  Returns:
+      array-like: The array `x` with missing values filled using interpolation.
+  """
+
+  mv = np.nan  # Missing value representation
+  rn = len(x)  # Number of rows
+
+  for i in range(1, rn-1):
+    # Check if current element is missing and previous element is valid
+    if np.isnan(x[i]) and not np.isnan(x[i - 1]):
+      j = i + 1
+      # Find the next valid element after the missing one
+      while j < rn-1 and np.isnan(x[j]):
+        j += 1
+
+      # If a valid element is found within the data range
+      if j <= rn:
+        # Calculate interpolation fraction
+        frac = (age_seq2[i] - age_seq2[i - 1]) / (age_seq2[j] - age_seq2[i - 1])
+        # Interpolate the missing value
+        x[i] = x[i - 1] + frac * (x[j] - x[i - 1])
+
+  return x
+
+
 def simprofs(FType, timespan, FSstate, checktie, farmsize, cht_sim,
 			 aliveSim, ialiveSim, dvgaliveSim, divaliveSim, CAaliveSim,
 			 totKSim, divSim, dvgSim, DAratioSim, NKratioSim, GIKratioSim,
-			 CAratioSim, YKratioSim, simwgts, obsmat, dumswgts, prngrph):
+			 CAratioSim, YKratioSim, simwgts, obsmat, dumswgts, prngrph, avgage):
 	# Local variables
 	sorttype = 0  # technology sort
 
@@ -1055,6 +1274,24 @@ def simprofs(FType, timespan, FSstate, checktie, farmsize, cht_sim,
 	dvgqntsim, quantcnts = getqunts(cht_sim, FType, dvgSim, dvgaliveSim, quants_rt, timespan, simwgts)
 	obsavgsim, quantcnts = getqunts(cht_sim, FType, aliveSim, dumswgts, 0, timespan, simwgts)
 
+	print("Making simulated data matrixes")
+
+	sim_data_matrices = {}
+
+	for var in [(tkqntsim, 1, quants_lv), 
+			 (divqntsim,8, quants_lv),  
+			 (DAqntsim,12, quants_rt), 
+			 (nkqntsim, 13, quants_rt), 
+			 (gikqntsim, 14, quants_rt), 
+			 (CAqntsim, 16, quants_rt), 
+			 (ykqntsim, 17, quants_rt), 
+			 (dvgqntsim, 18, quants_rt)]:
+		key, graph = grphmtx(var[0], var[1], 1, var[2], FSgroups, chrtnum, timespan, sorttype, avgage)
+		sim_data_matrices[key] = graph
+
+	#print(sim_data_matrices)
+	
+
 	# # Graph matrix plotting
 	# grphmtx(tkqntsim, 1, 1, quants_lv, FSgroups, chrtnum, timespan, sorttype)
 	# grphmtx(divqntsim, 8, 1, quants_lv, FSgroups, chrtnum, timespan, sorttype)
@@ -1076,7 +1313,7 @@ def simprofs(FType, timespan, FSstate, checktie, farmsize, cht_sim,
 	# 	makgrph2(quants_rt, FSgroups, chrtnum, 17, sorttype)
 	# 	makgrph2(quants_rt, FSgroups, chrtnum, 18, sorttype)
 
-	return tkqntsim, DAqntsim, nkqntsim, gikqntsim, CAqntsim, ykqntsim, divqntsim, dvgqntsim, obsavgsim
+	return tkqntsim, DAqntsim, nkqntsim, gikqntsim, CAqntsim, ykqntsim, divqntsim, dvgqntsim, obsavgsim, sim_data_matrices
 
 
 def wvec2(countadj, pdim):
@@ -1225,7 +1462,7 @@ def onerun(parmvec, betamax, linprefs, nobeq, w_0, bigR, numFTypes, inadaU, nons
 	sim_profiles = simprofs(profsort, timespan, FSstate, checktie, fsSim, cht_sim, aliveSim,
 							ialiveSim, dvgaliveSim, divaliveSim, CAaliveSim, totKSim, divSim,
 							dvgSim, DAratioSim, NKratioSim, GIKratioSim, CAratioSim, YKratioSim,
-							simwgts, obsmat, dumswgts, prngrph)
+							simwgts, obsmat, dumswgts, prngrph, avgage)
 
 	(tkqntsim, DAqntsim, nkqntsim, gikqntsim, CAqntsim, ykqntsim, divqntsim, dvgqntSim, obsavgsim) = sim_profiles
 

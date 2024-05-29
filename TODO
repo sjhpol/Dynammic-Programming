@@ -8,10 +8,10 @@
 -- Pop den i Overleaf, og modificer lidt, så det ser godt ud
 -- Skriv valgene ned.
 
-- Lav nogen goodness of fit-grafer / Hjalte's hovedpine 
+- Lav nogen goodness of fit-grafer (Hjalte's hovedpine)
 -- Start med kapital. Så dem alle
 * Den logiske kæde, som vi skal bruge, for at komme frem til GOF-grafer, er:
-- *onerun* - datasetup(✔️) -> dataprofs(✔️) -> grphmtx() -> makgrph2(1/2) -> doplot(bare matplotlib)
+- *onerun* - datasetup(✔️) -> dataprofs(✔️) -> grphmtx(✔️) -> makgrph2(1/2) -> doplot(bare matplotlib)
 -                                               ^ bruger filer ^
 
 - Skrev mere teori ind i Overleaf.
@@ -19,5 +19,3 @@
 -- Skriv ud hvordan financial bargaining faktisk fungerer
 
 - Begynd at tænke på, hvad vi ellers skal skrive om selve empirien; motivation, konklusion osv. 
-
-- Arbejd mod at få en fungerende 'onerun'-fkt. 

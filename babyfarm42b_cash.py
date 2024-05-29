@@ -2,8 +2,6 @@ import numpy as np
 import os
 from pathlib import Path
 
-from getfarmdat43 import loaddat, initdist, dataprofs, datasetup, fbillvec, getTFP
-from simcrit41 import getgrids, makepvecs, tauch
 from utility_functions import load_file # Functions that get called from several files have to be moved to a third file to avoid 'circular imports'
 from markch import markch
 import platform
