@@ -1276,7 +1276,7 @@ def simprofs(FType, timespan, FSstate, checktie, farmsize, cht_sim,
 
 	print("Making simulated data matrixes")
 
-	sim_data_matrices = {}
+	sim_data_matrixes = {}
 
 	for var in [(tkqntsim, 1, quants_lv), 
 			 (divqntsim,8, quants_lv),  
@@ -1287,7 +1287,7 @@ def simprofs(FType, timespan, FSstate, checktie, farmsize, cht_sim,
 			 (ykqntsim, 17, quants_rt), 
 			 (dvgqntsim, 18, quants_rt)]:
 		key, graph = grphmtx(var[0], var[1], 1, var[2], FSgroups, chrtnum, timespan, sorttype, avgage)
-		sim_data_matrices[key] = graph
+		sim_data_matrixes[key] = graph
 
 	#print(sim_data_matrices)
 	
@@ -1313,7 +1313,7 @@ def simprofs(FType, timespan, FSstate, checktie, farmsize, cht_sim,
 	# 	makgrph2(quants_rt, FSgroups, chrtnum, 17, sorttype)
 	# 	makgrph2(quants_rt, FSgroups, chrtnum, 18, sorttype)
 
-	return tkqntsim, DAqntsim, nkqntsim, gikqntsim, CAqntsim, ykqntsim, divqntsim, dvgqntsim, obsavgsim, sim_data_matrices
+	return tkqntsim, DAqntsim, nkqntsim, gikqntsim, CAqntsim, ykqntsim, divqntsim, dvgqntsim, obsavgsim, sim_data_matrixes
 
 
 def wvec2(countadj, pdim):
@@ -1399,7 +1399,7 @@ def onerun(parmvec, betamax, linprefs, nobeq, w_0, bigR, numFTypes, inadaU, nons
 														   gikratio, CAratio, ykratio, dumdwgts, avgage)
 	(TFPaggshks, TFP_FE, TFPaggeffs, tkqntdat, DAqntdat, CAqntdat, nkqntdat,
 	 gikqntdat, ykqntdat, divqntdat, dvgqntdat, obsavgdat, tkqcnts, divqcnts, dvgqcnts,
-	 std_zi, zvec, fevec, k_0, optNK, optKdat, countadj) = dataset
+	 std_zi, zvec, fevec, k_0, optNK, optKdat, countadj, real_data_matrixes) = dataset
 
 	# Handle near-zero values in `dvgqntdat`
 	tinydvg = np.abs(dvgqntdat) < 0.1
@@ -1464,7 +1464,7 @@ def onerun(parmvec, betamax, linprefs, nobeq, w_0, bigR, numFTypes, inadaU, nons
 							dvgSim, DAratioSim, NKratioSim, GIKratioSim, CAratioSim, YKratioSim,
 							simwgts, obsmat, dumswgts, prngrph, avgage)
 
-	(tkqntsim, DAqntsim, nkqntsim, gikqntsim, CAqntsim, ykqntsim, divqntsim, dvgqntSim, obsavgsim) = sim_profiles
+	(tkqntsim, DAqntsim, nkqntsim, gikqntsim, CAqntsim, ykqntsim, divqntsim, dvgqntSim, obsavgsim, sim_data_matrixes) = sim_profiles
 
 	allsmoms = makemomvec(tkqntsim, divqntsim, dvgqntSim, DAqntsim, CAqntsim, nkqntsim,
 						  gikqntsim, ykqntsim, obsavgsim)
@@ -2202,6 +2202,30 @@ def fbillvec(std_zi, std_za):
 
 	return zvals, zpmtx, zdim, zamin
 
+def load_file(filename, subdir="iofiles", ndmin=1):
+  """Loads data from a file in a subdirectory into a NumPy array of floats.
+
+  Args:
+      filename (str, optional): The name of the data file.
+      subdir (str, optional): The name of the subdirectory containing the data. Defaults to "iofiles".
+
+  Returns:
+      A NumPy array containing the data from the file, or None if the file
+      is not found or an error occurs during loading.
+  """
+
+  # Construct the full path to the file
+  this_directory = os.path.dirname(__file__)
+  full_subdir = os.path.join(this_directory, subdir)
+  filepath = os.path.join(full_subdir, filename)
+  
+  try:
+    data = np.loadtxt(filepath, dtype=float)
+    return data
+  except FileNotFoundError:
+    print(f"Error: File '{filepath}' not found.")
+    return None
+
 
 def dataprofs(FType, farmsize, FSstate, timespan, datawgts, checktie, chrttype, obsmat,
 				iobsmat, dvgobsmat, quants_lv, quants_rt, totcap, dividends, divgrowth,
@@ -2234,9 +2258,9 @@ def dataprofs(FType, farmsize, FSstate, timespan, datawgts, checktie, chrttype, 
 	if wgtdmmts == 1:
 		if wgtddata == 0:
 			# Need to redefine FSwgts to use herd size weights
-			datapath = r"C:\Users\Simon\Downloads\Jones_Pratap_AER_2017-0370_Archive\Jones_Pratap_AER_2017-0370_Archive\estimation_fake\data\Full_Sample"
-			datstr = os.path.join(datapath, "fake_weights.txt")
-			FSwgts = np.loadtxt(datstr, ndmin=2)
+			#datapath = r"C:\Users\Simon\Downloads\Jones_Pratap_AER_2017-0370_Archive\Jones_Pratap_AER_2017-0370_Archive\estimation_fake\data\Full_Sample"
+			#FSwgts = np.loadtxt(datstr, ndmin=2)
+			FSwgts = load_file("fake_weights.txt", subdir="data/Full_sample", ndmin=2)
 			FSwgts = FSwgts * (FSwgts > -99)
 			FSwgts = obsmat * FSwgts
 			FSwgts = np.mean(FSwgts, axis=1) / np.mean(obsmat, axis=1)  # farm averages
@@ -2261,17 +2285,26 @@ def dataprofs(FType, farmsize, FSstate, timespan, datawgts, checktie, chrttype, 
 	dvgqntdat, dvgqcnts = getqunts(chrttype, FType, divgrowth, dvgobsmat, quants_rt, timespan, datawgts)
 	obsavgdat, quantcnts = getqunts(chrttype, FType, obsmat, dumdwgts, 0, timespan, datawgts)
 
-	# grphmtx(tkqntdat, 1, 0, quants_lv, FSgroups, chrtnum, timespan, sorttype)
-	# grphmtx(divqntdat, 8, 0, quants_lv, FSgroups, chrtnum, timespan, sorttype)
-	# grphmtx(ltkqntdat, 11, 0, quants_rt, FSgroups, chrtnum, timespan, sorttype)
-	# grphmtx(DAqntdat, 12, 0, quants_rt, FSgroups, chrtnum, timespan, sorttype)
-	# grphmtx(nkqntdat, 13, 0, quants_rt, FSgroups, chrtnum, timespan, sorttype)
-	# grphmtx(gikqntdat, 14, 0, quants_rt, FSgroups, chrtnum, timespan, sorttype)
-	# grphmtx(CAqntdat, 16, 0, quants_rt, FSgroups, chrtnum, timespan, sorttype)
-	# grphmtx(ykqntdat, 17, 0, quants_rt, FSgroups, chrtnum, timespan, sorttype)
-	# grphmtx(dvgqntdat, 18, 0, quants_rt, FSgroups, chrtnum, timespan, sorttype)
+	print("------ calling grphmtx for real data -------")
 
-	return tkqntdat, DAqntdat, CAqntdat, nkqntdat, gikqntdat, ykqntdat, divqntdat, dvgqntdat, obsavgdat, tkqcnts, divqcnts, dvgqcnts, countadj
+	real_data_matrixes = {} # 
+	
+	# Rigtig data!!#
+	for var in [(tkqntdat, 1, quants_lv), 
+			 (divqntdat,8, quants_lv), 
+			 (DAqntdat,12, quants_rt), 
+			 (nkqntdat,13, quants_rt), 
+			 (gikqntdat,14, quants_rt), 
+			 (CAqntdat,16, quants_rt), 
+			 (ykqntdat,17,quants_rt), 
+			 (dvgqntdat,18,quants_rt)]:
+		key, graph = grphmtx(var[0], var[1], 0, var[2], FSgroups, chrtnum, timespan, sorttype, avgage)
+		real_data_matrixes[key] = graph
+	
+	print(real_data_matrixes)
+
+	
+	return tkqntdat, DAqntdat, CAqntdat, nkqntdat, gikqntdat, ykqntdat, divqntdat, dvgqntdat, obsavgdat, tkqcnts, divqcnts, dvgqcnts, countadj, real_data_matrixes
 
 
 def datasetup(gam, ag2, nshft, fcost, rloutput, totcap, intgoods, obsmat, farmtype, av_cows, famsize,
@@ -2347,7 +2380,7 @@ def datasetup(gam, ag2, nshft, fcost, rloutput, totcap, intgoods, obsmat, farmty
 
 	# Data profiles calculation
 	tkqntdat, DAqntdat, CAqntdat, nkqntdat, gikqntdat, ykqntdat, divqntdat, dvgqntdat, obsavgdat, \
-		tkqcnts, divqcnts, dvgqcnts, countadj = dataprofs(profsort, farmsize, FSstate, timespan, datawgts,
+		tkqcnts, divqcnts, dvgqcnts, countadj, real_data_matrixes = dataprofs(profsort, farmsize, FSstate, timespan, datawgts,
 														  checktie, chrttype, obsmat, iobsmat, dvgobsmat,
 														  quants_lv, quants_rt, totcap, dividends,
 														  divgrowth, LTKratio, debtasst, nkratio, gikratio,
@@ -2355,4 +2388,63 @@ def datasetup(gam, ag2, nshft, fcost, rloutput, totcap, intgoods, obsmat, farmty
 
 	return TFPaggshks, TFP_FE, TFPaggeffs, tkqntdat, DAqntdat, CAqntdat, nkqntdat, gikqntdat, \
 		ykqntdat, divqntdat, dvgqntdat, obsavgdat, tkqcnts, divqcnts, dvgqcnts, std_zi, zvec, \
-		fevec, k_0, optNK, optKdat, countadj
+		fevec, k_0, optNK, optKdat, countadj, real_data_matrixes
+
+def generate_all_summary_statistics():
+	"""Outputs summary statistics in LATEX format"""
+
+	(IDs, owncap, obsmat, lsdcap, totcap, LTKratio, totasst, totliab, equity, cash,
+			CAratio, debtasst, intgoods, nkratio, rloutput, ykratio, cashflow, dividends,
+			divgrowth, dvgobsmat, DVKratio, DVFEratio, eqinject, goteqinj, grossinv, gikratio,
+			netinv, nikratio, iobsmat, age_2001, init_yr, init_age, av_cows, famsize, cohorts,
+			chrttype, milktype, herdtype, farmtype, avgage, datawgts, initstate) = loaddat(timespan, np.array([1, 0]), 1, chrtnum, chrtstep, sizescreen, wgtddata) # du skal ikke spørge hvorfor
+
+	# LATEX table header
+	print("\\begin{tabular}{lccccc}")
+	print("\\headrow{Variable & Mean & Median & Std. Dev. & Max & Min} \\\\")
+
+	# TODO: Implement periode-kode, som angiver, hvilken periode det er i. 
+	# Nemmere løsning: Vi opdeler dem på (år,værdi), og så snitter vi over værdi betinget på år (=0)
+
+	summary_statistic_dictionary = {
+								"Family size": famsize,
+								"youngest operator age": init_age,
+								"totals assets": totasst,
+								"average age": avgage,
+								"divident growth": divgrowth}
+
+	# Loop through the dictionary and calculate statistics
+	for key, element in summary_statistic_dictionary.items():
+		summary_statistic = return_individual_sum_stats(element)
+		# Format statistics for LATEX output
+		print(f"{key} \t\t& {summary_statistic[0]:.2f} & {summary_statistic[1]:.2f} & {summary_statistic[2]:.2f} & {summary_statistic[3]:.0f} & {summary_statistic[4]:.0f} \\\\")
+
+	# LATEX table footer
+	print("\\end{tabular}")
+
+def return_individual_sum_stats(statistic, mvcode=-99):
+    """
+    Calculates summary statistics, handling missing values (mvcode).
+
+    Args:
+        statistic (numpy.ndarray): The array containing data for which to calculate statistics.
+        mvcode (int, optional): The code representing missing values. Defaults to -99.
+
+    Returns:
+        numpy.ndarray: An array containing the calculated statistics (mean, median, std, min, max).
+    """
+
+    # Remove observations with missing values (mvcode) before calculating statistics
+    filtered_statistic = statistic[statistic != mvcode]
+
+    # Check if any data remains after filtering
+    if not filtered_statistic.any():
+        raise ValueError("No valid data for calculating statistics. All values are missing (mvcode).")
+
+    mean = np.mean(filtered_statistic)
+    median = np.median(filtered_statistic)
+    std = np.std(filtered_statistic)
+    min = np.min(filtered_statistic)
+    max = np.max(filtered_statistic)
+
+    return np.array((mean, median, std, min, max))

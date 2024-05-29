@@ -811,8 +811,6 @@ def dataprofs(FType, farmsize, FSstate, timespan, datawgts, checktie, chrttype, 
 	if wgtdmmts == 1:
 		if wgtddata == 0:
 			# TODO: Need to redefine FSwgts to use herd size weights
-			# I think there might be some problems maintaining cross-platform compatibility if we go 2 directories deep.
-			# move all of /data/Full_sample/ to just /data/?
 			
 			FSwgts = load_file("fake_weights.txt", subdir="data/Full_sample", ndmin=2)
 			FSwgts = FSwgts * (FSwgts > -99)
