@@ -21,5 +21,3 @@
 - Begynd at tænke på, hvad vi ellers skal skrive om selve empirien; motivation, konklusion osv. 
 
 - Arbejd mod at få en fungerende 'onerun'-fkt. 
-
-- Note: np.arange subtly doesn't work like seqa. Why, must be between Jason APTECH and god.
