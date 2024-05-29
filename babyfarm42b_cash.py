@@ -13,23 +13,6 @@ from all_funcs import loaddat, initdist, datasetup, getgrids, makepvecs, onerun
 
 runnumber = ""
 
-# We use os.path here to achieve platform independence
-rootdir = os.path.dirname(__file__) # Gets base directory
-
-if platform.system() != "Windows":
-	directory_key = "/" 		# Unix
-	executable_extension = ""
-else:	
-	directory_key = "\\" 		# Windows
-	executable_extension = ".exe"
-
-rulecall = os.path.join(rootdir, "ccode") + directory_key + "babyfarm18b" + executable_extension
-iopath = os.path.join(rootdir, "iopath") + directory_key
-datapath = os.path.join(rootdir, "data") + directory_key
-datapath = os.path.join(datapath, "Full_Sample") + directory_key
-grphpath = os.path.join(rootdir, "graphs") + directory_key
-bootpath = os.path.join(rootdir, "bootlock") + directory_key
-
 print(f"iopath: {iopath}")
 
 outfile = rootdir + "babyfarm42b_cash.out"
@@ -55,17 +38,17 @@ dumdwgts = np.ones_like(datawgts)
 dumswgts = np.ones((numsims, timespan))
 
 # Save variables to path
-np.savetxt('iofiles/agevec.txt', agevec)
-np.savetxt('iofiles/sizevec.txt', sizevec)
-np.savetxt('iofiles/gkvec.txt', gkvec)
-np.savetxt('iofiles/Astate.txt', Astate)
-np.savetxt('iofiles/Estate.txt', Estate)
-np.savetxt('iofiles/TAstate.txt', TAstate)
-np.savetxt('iofiles/Bstate.txt', Bstate)
-np.savetxt('iofiles/Kstate.txt', Kstate)
-np.savetxt('iofiles/lagKstate.txt', lagKstate)
-np.savetxt('iofiles/NKState.txt', NKState)
-np.savetxt('iofiles/Cstate.txt', Cstate)
+np.savetxt(f'{iopath}agevec.txt', agevec)
+np.savetxt(f'{iopath}sizevec.txt', sizevec)
+np.savetxt(f'{iopath}gkvec.txt', gkvec)
+np.savetxt(f'{iopath}Astate.txt', Astate)
+np.savetxt(f'{iopath}Estate.txt', Estate)
+np.savetxt(f'{iopath}TAstate.txt', TAstate)
+np.savetxt(f'{iopath}Bstate.txt', Bstate)
+np.savetxt(f'{iopath}Kstate.txt', Kstate)
+np.savetxt(f'{iopath}lagKstate.txt', lagKstate)
+np.savetxt(f'{iopath}NKState.txt', NKState)
+np.savetxt(f'{iopath}Cstate.txt', Cstate)
 
 # Baseline parameters
 bta = logitrv(np.array([0.972874, 0.999723, 1.000921, 0.967146, 0.972585, 0.972849, 1.000325, 0.972860, 0.980321, 1.0084573, 0.973077])/betamax)
@@ -132,7 +115,7 @@ fixlam = 1  # 1=> do not estimate liquidation penalty
 
 finparms0 = np.array([r_rf, bigR, bigG, gkE, noReneg, numFTypes])
 
-np.savetxt('iofiles/wprof.txt', wprof)
+np.savetxt(f'{iopath}wprof.txt', wprof)
 
 # Clear variables
 del bta, nu, c_0, cfloor, chi0, finalMPC, c_bar, alp, gam0, nshft0, lam, phi, zta, fcost0, colcnst
@@ -143,7 +126,7 @@ prefparms, finparms, gam, ag2, nshft, fcost = makepvecs(parmvec, betamax, linpre
 
 TFPaggshks, TFP_FE, TFPaggeffs, tkqntdat, DAqntdat, CAqntdat, nkqntdat, gikqntdat, \
 	ykqntdat, divqntdat, dvgqntdat, obsavgdat, tkqcnts, divqcnts, dvgqcnts, std_zi,\
-	zvec, fevec, k_0, optNK, optKdat, countadj = datasetup(gam, ag2, nshft, fcost, rloutput,
+	zvec, fevec, k_0, optNK, optKdat, countadj, real_data_matrixes = datasetup(gam, ag2, nshft, fcost, rloutput,
 														   totcap, intgoods, obsmat, farmtype, av_cows, famsize,
 														   datawgts, chrttype, iobsmat, dvgobsmat, 
 			  												dividends, divgrowth, LTKratio, debtasst, nkratio, gikratio,

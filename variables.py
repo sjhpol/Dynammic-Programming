@@ -1,4 +1,6 @@
 import numpy as np
+import os
+import platform
 
 # Define other variables
 job = 1
@@ -94,3 +96,22 @@ numsims = 90000
 
 # Create Age vector
 agevec = np.concatenate([agevec, np.array([numsims])])
+
+
+# PATHS
+
+rootdir = os.path.dirname(__file__) # Gets base directory
+
+if platform.system() != "Windows":
+	directory_key = "/" 		# Unix
+	executable_extension = ""
+else:	
+	directory_key = "\\" 		# Windows
+	executable_extension = ".exe"
+
+rulecall = os.path.join(rootdir, "ccode") + directory_key + "babyfarm18b" + executable_extension
+iopath = os.path.join(rootdir, "iofiles") + directory_key
+datapath = os.path.join(rootdir, "data")
+datapath = os.path.join(datapath, "Full_Sample") + directory_key
+grphpath = os.path.join(rootdir, "graphs") + directory_key
+outputpath = os.path.join(rootdir, "output") + directory_key

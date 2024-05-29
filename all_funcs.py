@@ -1419,15 +1419,18 @@ def onerun(parmvec, betamax, linprefs, nobeq, w_0, bigR, numFTypes, inadaU, nons
 	k_0 = k_0[randrows]  # Ensure `randrows` is defined
 	optNK = optNK[randrows]  # Ensure `randrows` is defined
 
+	# Stupid hack!
+	job = np.array((1.0))
+
 	# Save intermediate results, replace `save_path` with actual save logic if needed
-	np.savetxt('iofiles/job.txt', job)
-	np.savetxt('iofiles/pref_parms.txt', pref_parms)
-	np.savetxt('iofiles/fin_parms.txt', fin_parms)
-	np.savetxt('iofiles/zvec.txt', zvec)
-	np.savetxt('iofiles/fevec.txt', fevec)
-	np.savetxt('iofiles/zshks.txt', zshks)
-	np.savetxt('iofiles/feshks.txt', feshks)
-	np.savetxt('iofiles/fevec.txt', fevec)
+	#np.savetxt(f'{iopath}job.txt', job)
+	np.savetxt(f'{iopath}pref_parms.txt', pref_parms)
+	np.savetxt(f'{iopath}fin_parms.txt', fin_parms)
+	np.savetxt(f'{iopath}zvec.txt', zvec)
+	np.savetxt(f'{iopath}fevec.txt', fevec)
+	np.savetxt(f'{iopath}zshks.txt', zshks)
+	np.savetxt(f'{iopath}feshks.txt', feshks)
+	np.savetxt(f'{iopath}fevec.txt', fevec)
 
 	### TODO: HERE THEY CALL THE C PROGRAM
 	## Add the python version of the C
@@ -1444,10 +1447,10 @@ def onerun(parmvec, betamax, linprefs, nobeq, w_0, bigR, numFTypes, inadaU, nons
 																gkE, dlt, rdgE, mvcode, feshks, prnres)
 
 	# Load files
-	cht_sim = np.loadtxt('iofiles/cht_sim.txt')
+	cht_sim = np.loadtxt(f'{iopath}cht_sim.txt')
 	cht_sim = cht_sim.reshape(-1,1)
 
-	simwgts = np.loadtxt('iofiles/simwgts.txt')
+	simwgts = np.loadtxt(f'{iopath}simwgts.txt')
 
 	if sizevar == 1:
 		fsSim = feshks
@@ -1525,7 +1528,7 @@ def removeFE(datamat_j, obsmat_j):
 def loaddat(nyrsdat, lsdadj, cashtfp, chrtnum, chrtstep, sizescreen, wgtddata):
 	print("THE DATA SPEAKS!")
 
-	datapath = r"C:\Users\Simon\Downloads\Jones_Pratap_AER_2017-0370_Archive\Jones_Pratap_AER_2017-0370_Archive\estimation_fake\data\Full_Sample"
+	#datapath = r"C:\Users\Simon\Downloads\Jones_Pratap_AER_2017-0370_Archive\Jones_Pratap_AER_2017-0370_Archive\estimation_fake\data\Full_Sample"
 
 	numfarms = 363
 
@@ -1995,18 +1998,18 @@ def initdist(IDs, farmtype, initstate, obsmat, iobsmat, dvgobsmat, isimage, coho
 	# Assuming `save path` does some kind of file saving, you can implement this as needed in your Python code
 	# save path =^iopath initages, inityrs, initta, initK, initdebt, IDsim, obssim,
 	#                        iobssim, dvgobssim, cht_sim, ftype_sim, simwgts;
-	np.savetxt('iofiles/initages.txt', initages)
-	np.savetxt('iofiles/inityrs.txt', inityrs)
-	np.savetxt('iofiles/initta.txt', initTA)
-	np.savetxt('iofiles/initK.txt', initK)
-	np.savetxt('iofiles/initdebt.txt', initdebt)
-	np.savetxt('iofiles/IDsim.txt', IDsim)
-	np.savetxt('iofiles/obssim.txt', obssim)
-	np.savetxt('iofiles/iobssim.txt', iobssim)
-	np.savetxt('iofiles/dvgobssim.txt', dvgobssim)
-	np.savetxt('iofiles/cht_sim.txt', cht_sim)
-	np.savetxt('iofiles/ftype_sim.txt', ftype_sim)
-	np.savetxt('iofiles/simwgts.txt', simwgts)
+	np.savetxt(f'{datapath}initages.txt', initages)
+	np.savetxt(f'{datapath}inityrs.txt', inityrs)
+	np.savetxt(f'{datapath}initta.txt', initTA)
+	np.savetxt(f'{datapath}initK.txt', initK)
+	np.savetxt(f'{datapath}initdebt.txt', initdebt)
+	np.savetxt(f'{datapath}IDsim.txt', IDsim)
+	np.savetxt(f'{datapath}obssim.txt', obssim)
+	np.savetxt(f'{datapath}iobssim.txt', iobssim)
+	np.savetxt(f'{datapath}dvgobssim.txt', dvgobssim)
+	np.savetxt(f'{datapath}cht_sim.txt', cht_sim)
+	np.savetxt(f'{datapath}ftype_sim.txt', ftype_sim)
+	np.savetxt(f'{datapath}simwgts.txt', simwgts)
 
 	idioshks = np.random.randn(numdraws, simyrs)
 
