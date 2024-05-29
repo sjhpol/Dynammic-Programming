@@ -1076,7 +1076,8 @@ def grphmtx(dataprfs, vartype, datatype, quants_j, FSnum_j, chrtnum_j, numyrs_j,
 	# Create sequence of maturity years
 	mmtcols = np.arange(1, mmtyrs + 1)  # Use numpy.arange for sequence
 
-	for iQunt in range(qnum_j + 1):  # Loop through quantiles (including 0 for means)
+	# Sorry.
+	while iQunt < (qnum_j + 1):  # Loop through quantiles (including 0 for means)
 		name3 = f"{iQunt+1}"  # Format quantile number as string
 
 		# Initialize graph matrix with missing values
@@ -1087,42 +1088,47 @@ def grphmtx(dataprfs, vartype, datatype, quants_j, FSnum_j, chrtnum_j, numyrs_j,
 		# Track ages with observations
 		gotsome = np.zeros((_tr2, 1), dtype=int)
 
-		cn = -2  # Column counter
+		cn = 0  # Column counter
 
-		for iChrt in range(0, chrtnum_j):  # Loop through charts
-			for iFS in range(0, FSnum_j):  # Loop through firms
+		for iChrt in range(chrtnum_j):  # Loop through charts
+			for iFS in range(FSnum_j):  # Loop through firms
 				if iQunt == 0:
 					# Means case
 					print("Means case")
-					getmatrix_parameters = np.array([iChrt-1, iFS-1, 0]) # -1 til eksponent her
+					getmatrix_parameters = np.array([iChrt, iFS, 0]) # -1 til eksponent her
 				else:
 					# Quantile case
 					print("Quantile case") 
-					getmatrix_parameters = np.array([iChrt-1, iFS-1, iQunt-1]) #### ok usikker vedr. 
+					getmatrix_parameters = np.array([iChrt, iFS, iQunt-1]) 
 					
 				# Handle missing values
-				tempprf = getmatrix(dataprfs, getmatrix_parameters)  # Assuming getmatrix function
-				tempprf = np.where(tempprf == mvcode, np.NaN, tempprf)
+				tempprf = getmatrix(dataprfs, getmatrix_parameters)  # 11x1
+				tempprf = np.where(tempprf == mvcode, np.NaN, tempprf) 
 
 				cn += 1
-				rn = mmtcols + avgage[iChrt - 1] - np.min(age_seq2, axis=0) # rn 11x1
+				
+				rn = mmtcols + avgage[iChrt] - np.min(age_seq2, axis=0) # rn (11x1)
 				rn = rn.astype(int)
 				# Track ages with observations
 				gotsome[rn] = np.ones((mmtyrs, 1))
 
-		# Fill graph matrix
-		gmat[rn, cn] = (tempprf.T).flatten()  # Transpose for row-wise storage. 
+				# Fill graph matrix
+				print(f"gmat cn {cn}")
+				gmat[rn-1, cn] = (tempprf).flatten()  # Transpose for row-wise storage. 
 		
 		# Remove rows with no observations
-		gmat = gmat[gotsome.flatten() == 1, :]
-		ageseq3 = age_seq2[gotsome.flatten()]  # Use gotsome.flatten() for indexing
+		is_all_nan = np.all(np.isnan(gmat[:, -4:]), axis=1)
+		gmat = gmat[~is_all_nan]
+
+		# Final ageseq is all years alive where there's not missing data. #
+		ageseq3 = gmat[:,0].astype(int)  # Use gotsome.flatten() for indexing
 
         # Interpolation for missing values within columns
 		for col in range(1, gmat.shape[1]):
 			gmat[:,cn] = fill_missing_values(gmat[:,cn],ageseq3-1)		#     @- missing values -@
+
+		iQunt += 1
 	
-
-
 	fnamestr = name1 + name2 + name3
 	print("\n")
 	print(fnamestr)
