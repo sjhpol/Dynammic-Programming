@@ -25,6 +25,7 @@ from typing import TypeAlias, List, Tuple, Final # Try to statically type everyt
 import numpy as np # brug numpy så meget som muligt.
 import math
 import numpy.typing as npt
+import os
 
 # Speed!!!
 import numba as nb
@@ -1557,3 +1558,39 @@ simulation(initAges, initYears, initCapital, initTotAssets,
                  debtsimsMtx, NWsimsMtx, fracRepaidsimsMtx, outputsimsMtx,liqDecsimsMtx, agesimsMtx,
                  expensesimsMtx, liqDecisionMat, fracRepaidMat, bestIntRateFarm, bestCashFarm,
                  bestDividendFarm, bestKFarm, bestNKratFarm, bestDebtFarm, numSims)
+
+# save simulations to txt files
+sims_output = r"C:\Users\jomo0\OneDrive\Skrivebord\dp_copy\sims_output"
+
+def save_processed_data_txt(data, filename, savepath):
+    """
+    Save processed data to a text file.
+
+    Parameters:
+    data: The data to save (numpy array).
+    filename: The name of the file.
+    savepath: The path to the directory where the file will be saved.
+    """
+    filepath = os.path.join(savepath, filename)
+    if isinstance(data, np.ndarray):
+        np.savetxt(filepath, data, delimiter=',')
+    else:
+        raise ValueError("Data must be a numpy array.")
+    print(f"Saved {filename} to {savepath}")
+
+    save_processed_data_txt(FEIsimsMtx, "FEindxS.txt", sims_output)
+    save_processed_data_txt(ZsimsMtx, "ZValsS.txt", sims_output)
+    save_processed_data_txt(ZIsimsMtx, "ZindxS.txt", sims_output)
+    save_processed_data_txt(asstsimsMtx, "assetsS.txt", sims_output)
+    save_processed_data_txt(debtsimsMtx, "debtS.txt", sims_output)
+    save_processed_data_txt(fracRepaidsimsMtx, "fracRPS.txt", sims_output)
+    save_processed_data_txt(liqDecsimsMtx, "liqDecS.txt", sims_output)
+    save_processed_data_txt(agesimsMtx, "ageS.txt", sims_output)
+    save_processed_data_txt(dividendsimsMtx, "divS.txt", sims_output)
+    save_processed_data_txt(totKsimsMtx, "totKS.txt", sims_output)
+    save_processed_data_txt(NKratsimsMtx, "NKratos.txt", sims_output)
+    save_processed_data_txt(cashsimsMtx, "cashS.txt", sims_output)
+    save_processed_data_txt(IRsimsMtx, "intRateS.txt", sims_output)
+    save_processed_data_txt(NWsimsMtx, "equityS.txt", sims_output)
+    save_processed_data_txt(outputsimsMtx, "outputS.txt", sims_output)
+    save_processed_data_txt(expensesimsMtx, "expenseS.txt", sims_output)
