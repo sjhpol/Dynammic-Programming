@@ -99,7 +99,6 @@ agevec = np.concatenate([agevec, np.array([numsims])])
 
 
 # PATHS
-
 rootdir = os.path.dirname(__file__) # Gets base directory
 
 if platform.system() != "Windows":

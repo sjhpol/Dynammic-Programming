@@ -1998,18 +1998,18 @@ def initdist(IDs, farmtype, initstate, obsmat, iobsmat, dvgobsmat, isimage, coho
 	# Assuming `save path` does some kind of file saving, you can implement this as needed in your Python code
 	# save path =^iopath initages, inityrs, initta, initK, initdebt, IDsim, obssim,
 	#                        iobssim, dvgobssim, cht_sim, ftype_sim, simwgts;
-	np.savetxt(f'{datapath}initages.txt', initages)
-	np.savetxt(f'{datapath}inityrs.txt', inityrs)
-	np.savetxt(f'{datapath}initta.txt', initTA)
-	np.savetxt(f'{datapath}initK.txt', initK)
-	np.savetxt(f'{datapath}initdebt.txt', initdebt)
-	np.savetxt(f'{datapath}IDsim.txt', IDsim)
-	np.savetxt(f'{datapath}obssim.txt', obssim)
-	np.savetxt(f'{datapath}iobssim.txt', iobssim)
-	np.savetxt(f'{datapath}dvgobssim.txt', dvgobssim)
-	np.savetxt(f'{datapath}cht_sim.txt', cht_sim)
-	np.savetxt(f'{datapath}ftype_sim.txt', ftype_sim)
-	np.savetxt(f'{datapath}simwgts.txt', simwgts)
+	np.savetxt(f'{iopath}initages.txt', initages)
+	np.savetxt(f'{iopath}inityrs.txt', inityrs)
+	np.savetxt(f'{iopath}initta.txt', initTA)
+	np.savetxt(f'{iopath}initK.txt', initK)
+	np.savetxt(f'{iopath}initdebt.txt', initdebt)
+	np.savetxt(f'{iopath}IDsim.txt', IDsim)
+	np.savetxt(f'{iopath}obssim.txt', obssim)
+	np.savetxt(f'{iopath}iobssim.txt', iobssim)
+	np.savetxt(f'{iopath}dvgobssim.txt', dvgobssim)
+	np.savetxt(f'{iopath}cht_sim.txt', cht_sim)
+	np.savetxt(f'{iopath}ftype_sim.txt', ftype_sim)
+	np.savetxt(f'{iopath}simwgts.txt', simwgts)
 
 	idioshks = np.random.randn(numdraws, simyrs)
 
