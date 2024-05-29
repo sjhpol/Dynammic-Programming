@@ -11,6 +11,8 @@ import platform
 from variables import *
 from functions import logitrv, logit
 
+from all_funcs import loaddat, initdist, datasetup, getgrids, makepvecs, onerun
+
 runnumber = ""
 
 # We use os.path here to achieve platform independence
@@ -134,7 +136,7 @@ prefparms, finparms, gam, ag2, nshft, fcost = makepvecs(parmvec, betamax, linpre
 
 TFPaggshks, TFP_FE, TFPaggeffs, tkqntdat, DAqntdat, CAqntdat, nkqntdat, gikqntdat, \
 	ykqntdat, divqntdat, dvgqntdat, obsavgdat, tkqcnts, divqcnts, dvgqcnts, std_zi,\
-	zvec, fevec, k_0, optNK, optKdat, countadj = datasetup(gam, ag2, nshft, fcost, rloutput,\
+	zvec, fevec, k_0, optNK, optKdat, countadj = datasetup(gam, ag2, nshft, fcost, rloutput,
 														   totcap, intgoods, obsmat, farmtype, av_cows, famsize,
 														   datawgts, chrttype, iobsmat, dvgobsmat, 
 			  												dividends, divgrowth, LTKratio, debtasst, nkratio, gikratio,
@@ -149,6 +151,12 @@ TFPaggshks, TFP_FE, TFPaggeffs, tkqntdat, DAqntdat, CAqntdat, nkqntdat, gikqntda
 numparms = parmvec.shape[0]
 fixvals = parmvec
 zerovec = 1 					# Note, that this becomes a vector later <_<. Also never has zeroes
+onerun(parmvec, betamax, linprefs, nobeq, w_0, bigR, numFTypes, inadaU, nonshft, noDScost, nofcost,
+		  	nocolcnst, prnres, noReneg, finparms0, idioshks, randrows,
+		   rloutput, totcap, intgoods, obsmat,
+		   farmtype, av_cows, famsize, datawgts, chrttype, iobsmat,
+		   dvgobsmat, dividends, divgrowth, LTKratio, debtasst, nkratio,
+		   gikratio, CAratio, ykratio, dumdwgts, numsims, avgage)
 
 # Run the model, if necessary. 
 

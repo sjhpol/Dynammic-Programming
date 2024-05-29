@@ -836,8 +836,7 @@ def loadSims(fcost, gam, ag2, nshft, k_0, optNK, timespan, numsims, cashlag, tfp
 	ialiveSim = aliveSim[:, :timespan] * fwdalivesim
 	dvgaliveSim = aliveSim[:, divlag:timespan + divlag] * np.column_stack((np.zeros((numsims, 1)), aliveSim[:, divlag:timespan + divlag - 1]))
 	aliveSim = aliveSim[:, :timespan]
-	exiterrs = (aliveSim == 0).reshape(-1,1) * obsSim
-	exiterrs = exiterrs.reshape(numsims, timespan)
+	exiterrs = (aliveSim == 0) * obsSim
 	gotxerrs = (exiterrs @ np.ones((timespan, 1))) > 0
 	IDlist = np.unique(IDsim)
 	iDDums = IDsim == IDlist
@@ -846,9 +845,9 @@ def loadSims(fcost, gam, ag2, nshft, k_0, optNK, timespan, numsims, cashlag, tfp
 
 	ialiveSim = iobsSim.reshape(numsims, timespan) * ialiveSim
 	dvgaliveSim = dvgobsSim.reshape(numsims, timespan) * dvgaliveSim
-	aliveSim = obsSim * aliveSim.reshape(-1,1)
+	aliveSim = obsSim * aliveSim
 	aliveSim = aliveSim.reshape(numsims, timespan)
-	fwdalivesim = obsSim * fwdalivesim.reshape(-1,1)
+	fwdalivesim = obsSim * fwdalivesim
 	fwdalivesim = fwdalivesim.reshape(numsims, timespan)
 	divaliveSim = divlag * fwdalivesim + (1 - divlag) * aliveSim
 	DVKalivesim = divaliveSim * aliveSim
@@ -892,14 +891,15 @@ def loadSims(fcost, gam, ag2, nshft, k_0, optNK, timespan, numsims, cashlag, tfp
 		np.mean(exiterrs * simwgts.reshape(numsims, timespan), axis=0) / aliveavg
 	])
 
-	print("      Year    frac alive   TFP shks     Assets   Debt/Assets  Cash/Assets    Capital    igoods/K")
-	print("       Y/K    Net Inv/K   Gross I/K   exiterrs")
+	if prnres > 0:
+		print("      Year    frac alive   TFP shks     Assets   Debt/Assets  Cash/Assets    Capital    igoods/K")
+		print("       Y/K    Net Inv/K   Gross I/K   exiterrs")
 
-	for t in range(timespan):
-		if t % prnres == 0:
-			print(
-				f'{t} {simavg[0, t]:.4f} {simavg[1, t]:.4f} {simavg[2, t]:.4f} {simavg[3, t]:.4f} {simavg[4, t]:.4f} {simavg[5, t]:.4f}')
-			print(f' {simavg[6, t]:.4f} {simavg[7, t]:.4f} {simavg[8, t]:.4f} {simavg[9, t]:.4f} {simavg[10, t]:.4f}')
+		for t in range(timespan):
+			if t % prnres == 0:
+				print(
+					f'{t} {simavg[0, t]:.4f} {simavg[1, t]:.4f} {simavg[2, t]:.4f} {simavg[3, t]:.4f} {simavg[4, t]:.4f} {simavg[5, t]:.4f}')
+				print(f' {simavg[6, t]:.4f} {simavg[7, t]:.4f} {simavg[8, t]:.4f} {simavg[9, t]:.4f} {simavg[10, t]:.4f}')
 
 	# You might want to save results instead of just printing them, depending on your needs
 
@@ -1139,11 +1139,12 @@ def onerun(parmvec, betamax, linprefs, nobeq, w_0, bigR, numFTypes, inadaU, nons
 		   rloutput, totcap, intgoods, obsmat,
 		   farmtype, av_cows, famsize, datawgts, chrttype, iobsmat,
 		   dvgobsmat, dividends, divgrowth, LTKratio, debtasst, nkratio,
-		   gikratio, CAratio, ykratio, dumdwgts, numsims):
+		   gikratio, CAratio, ykratio, dumdwgts, numsims, avgage):
 	# Initialize placeholders and variables
 	zero_vec = np.zeros_like(parmvec)
 	fix_vals = np.ones_like(parmvec)  # Replace with actual fixed values
 	parm_trans = 1  # Assuming some transformation flag, replace if needed
+	dumswgts = np.ones((numsims, timespan))
 
 	all_parms = parmvec * zero_vec + fix_vals * (1 - zero_vec)
 
@@ -1158,7 +1159,7 @@ def onerun(parmvec, betamax, linprefs, nobeq, w_0, bigR, numFTypes, inadaU, nons
 	dataset = datasetup(gam, ag2, nshft, fcost, rloutput, totcap, intgoods, obsmat,
 														   farmtype, av_cows, famsize, datawgts, chrttype, iobsmat,
 														   dvgobsmat, dividends, divgrowth, LTKratio, debtasst, nkratio,
-														   gikratio, CAratio, ykratio, dumdwgts)
+														   gikratio, CAratio, ykratio, dumdwgts, avgage)
 	(TFPaggshks, TFP_FE, TFPaggeffs, tkqntdat, DAqntdat, CAqntdat, nkqntdat,
 	 gikqntdat, ykqntdat, divqntdat, dvgqntdat, obsavgdat, tkqcnts, divqcnts, dvgqcnts,
 	 std_zi, zvec, fevec, k_0, optNK, optKdat, countadj) = dataset
@@ -1201,6 +1202,8 @@ def onerun(parmvec, betamax, linprefs, nobeq, w_0, bigR, numFTypes, inadaU, nons
 	# Load files
 	cht_sim = np.loadtxt('iofiles/cht_sim.txt')
 	cht_sim = cht_sim.reshape(-1,1)
+
+	simwgts = np.loadtxt('iofiles/simwgts.txt')
 
 	if sizevar == 1:
 		fsSim = feshks
@@ -1958,7 +1961,7 @@ def fbillvec(std_zi, std_za):
 
 def dataprofs(FType, farmsize, FSstate, timespan, datawgts, checktie, chrttype, obsmat,
 				iobsmat, dvgobsmat, quants_lv, quants_rt, totcap, dividends, divgrowth,
-				LTKratio, debtasst, nkratio, gikratio, CAratio, ykratio, dumdwgts):
+				LTKratio, debtasst, nkratio, gikratio, CAratio, ykratio, dumdwgts, avgage):
 
 	sorttype = 0
 	FSwgts = obsmat * datawgts
@@ -2028,7 +2031,7 @@ def dataprofs(FType, farmsize, FSstate, timespan, datawgts, checktie, chrttype, 
 
 
 def datasetup(gam, ag2, nshft, fcost, rloutput, totcap, intgoods, obsmat, farmtype, av_cows, famsize,
-			  datawgts, chrttype, iobsmat, dvgobsmat, dividends, divgrowth, LTKratio, debtasst, nkratio, gikratio, CAratio, ykratio, dumdwgts):
+			  datawgts, chrttype, iobsmat, dvgobsmat, dividends, divgrowth, LTKratio, debtasst, nkratio, gikratio, CAratio, ykratio, dumdwgts, avgage):
 	# Local variables initialization
 	TFPaggshks, std_zi, std_fe, TFP_FE, std_za, TFPaggeffs = getTFP(rloutput, totcap, intgoods, obsmat, gam, ag2, nshft,
 																	fcost, statacrap, yrseq, firstyr, farmtype)
@@ -2104,7 +2107,7 @@ def datasetup(gam, ag2, nshft, fcost, rloutput, totcap, intgoods, obsmat, farmty
 														  checktie, chrttype, obsmat, iobsmat, dvgobsmat,
 														  quants_lv, quants_rt, totcap, dividends,
 														  divgrowth, LTKratio, debtasst, nkratio, gikratio,
-														  CAratio, ykratio, dumdwgts)
+														  CAratio, ykratio, dumdwgts, avgage)
 
 	return TFPaggshks, TFP_FE, TFPaggeffs, tkqntdat, DAqntdat, CAqntdat, nkqntdat, gikqntdat, \
 		ykqntdat, divqntdat, dvgqntdat, obsavgdat, tkqcnts, divqcnts, dvgqcnts, std_zi, zvec, \
