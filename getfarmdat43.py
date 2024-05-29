@@ -1,6 +1,7 @@
 import numpy as np
 import os
 from pathlib import Path
+from numpy import ma
 
 
 import pandas as pd
@@ -10,6 +11,7 @@ from simcrit41 import getchrt, getcorrs, getqunts, tauch, FSquant, makepvecs
 from markch import markch
 from utility_functions import load_file, removeFE # we move this out to resolve a circular import.
 from variables import *
+from scipy.interpolate import interp1d
 #from babyfarm42b_cash import parmvec
 import matplotlib.pyplot as plt
 
@@ -838,16 +840,14 @@ def dataprofs(FType, farmsize, FSstate, timespan, datawgts, checktie, chrttype, 
 
 	print("calling grphmtx")
 
-	grphmtx(tkqntdat, 1, 0, quants_lv, FSgroups, chrtnum, timespan, sorttype, avgage)
-	grphmtx(divqntdat, 8, 0, quants_lv, FSgroups, chrtnum, timespan, sorttype)
-	grphmtx(ltkqntdat, 11, 0, quants_rt, FSgroups, chrtnum, timespan, sorttype)
-	grphmtx(DAqntdat, 12, 0, quants_rt, FSgroups, chrtnum, timespan, sorttype)
-	grphmtx(nkqntdat, 13, 0, quants_rt, FSgroups, chrtnum, timespan, sorttype)
-	grphmtx(gikqntdat, 14, 0, quants_rt, FSgroups, chrtnum, timespan, sorttype)
-	grphmtx(CAqntdat, 16, 0, quants_rt, FSgroups, chrtnum, timespan, sorttype)
-	grphmtx(ykqntdat, 17, 0, quants_rt, FSgroups, chrtnum, timespan, sorttype)
-	grphmtx(dvgqntdat, 18, 0, quants_rt, FSgroups, chrtnum, timespan, sorttype)
+	graphmatrix = {}
 
+	for var in [(tkqntdat, 1), (divqntdat,8), (ltkqntdat,11), (DAqntdat,12), (nkqntdat,13), (gikqntdat,14), (CAqntdat,16), (ykqntdat,17), (dvgqntdat,18)]:
+		key, graph = grphmtx(var[0], var[1], 0, quants_lv, FSgroups, chrtnum, timespan, sorttype, avgage)
+		graphmatrix[key] = graph
+	
+	print(graphmatrix)
+	
 	return tkqntdat, DAqntdat, CAqntdat, nkqntdat, gikqntdat, ykqntdat, divqntdat, dvgqntdat, obsavgdat, tkqcnts, divqcnts, dvgqcnts, countadj
 
 def generate_all_summary_statistics():
@@ -952,10 +952,41 @@ def getmatrix(a, loc):
   # Raise an error for unsupported cases (M < N-2 or M > N)
   raise ValueError("Unsupported value for M. loc must have length N, N-1, or N-2.")
 
+def fill_missing_values(x, age_seq2):
+  """
+  Fills missing values (represented by `mv`) in `x` using linear interpolation
+  based on `age_seq2`.
+
+  Args:
+      x: (array-like) Data array with missing values.
+      age_seq2: (array-like) Age sequence corresponding to data points in `x`.
+
+  Returns:
+      array-like: The array `x` with missing values filled using interpolation.
+  """
+
+  mv = np.nan  # Missing value representation
+  rn = len(x)  # Number of rows
+
+  for i in range(1, rn-1):
+    # Check if current element is missing and previous element is valid
+    if np.isnan(x[i]) and not np.isnan(x[i - 1]):
+      j = i + 1
+      # Find the next valid element after the missing one
+      while j < rn-1 and np.isnan(x[j]):
+        j += 1
+
+      # If a valid element is found within the data range
+      if j <= rn:
+        # Calculate interpolation fraction
+        frac = (age_seq2[i] - age_seq2[i - 1]) / (age_seq2[j] - age_seq2[i - 1])
+        # Interpolate the missing value
+        x[i] = x[i - 1] + frac * (x[j] - x[i - 1])
+
+  return x
 
 def grphmtx(dataprfs, vartype, datatype, quants_j, FSnum_j, chrtnum_j, numyrs_j, sorttype, avgage):
 	"""
-	WIP.
 	This function shapes the data how we want it. Core to making graphs.
 	We modify the args to avoid scope problems. 
 
@@ -1028,16 +1059,17 @@ def grphmtx(dataprfs, vartype, datatype, quants_j, FSnum_j, chrtnum_j, numyrs_j,
 		name2 += "Unknown sort"
 
 	if quants_j == 0:
-		iQunt = 1
-		qnum_j = quants_j.shape[0]  # Get number of rows (quantiles)
-	else:
 		iQunt = 0
 		qnum_j = 0  # Set number of quantiles to 0	
+	else:
+		iQunt = 1
+		#qnum_j = quants_j.shape[0]  # Get number of rows (quantiles)
+		qnum_j = 1
 
 	# Calculate age range
 	_tr2 = int(np.max(avgage, axis=0) - np.min(avgage, axis = 0) + numyrs_j + 5)
-	age_seq2 = np.arange(np.min(avgage, axis=0) - 2, _tr2 + 1)  # Use numpy.arange for sequence
-
+	age_seq2 = np.arange(np.min(avgage, axis=0) - 2, np.min(avgage, axis=0) - 2 + _tr2, dtype=int)  # Use numpy.arange for sequence
+	#age_seq2 = age_seq2.reshape(-1,1)
 	# Extract maturity years
 	mmtyrs = dataprfs.shape[3]  # 'getorders' corresponds to np.shape. -1 bc GAUSS-indexing.
 
@@ -1045,57 +1077,59 @@ def grphmtx(dataprfs, vartype, datatype, quants_j, FSnum_j, chrtnum_j, numyrs_j,
 	mmtcols = np.arange(1, mmtyrs + 1)  # Use numpy.arange for sequence
 
 	for iQunt in range(qnum_j + 1):  # Loop through quantiles (including 0 for means)
-		name3 = f"{iQunt}"  # Format quantile number as string
+		name3 = f"{iQunt+1}"  # Format quantile number as string
 
 		# Initialize graph matrix with missing values
 		gmat = np.ones((_tr2, chrtnum_j * FSnum_j)) * np.NaN  # Missing value representation
+		gmat = np.column_stack((age_seq2, gmat))
+		print(gmat.shape)
 
 		# Track ages with observations
-		gotsome = np.zeros((_tr2, 1))
+		gotsome = np.zeros((_tr2, 1), dtype=int)
 
-		cn = 1  # Column counter
+		cn = -2  # Column counter
 
 		for iChrt in range(0, chrtnum_j):  # Loop through charts
 			for iFS in range(0, FSnum_j):  # Loop through firms
 				if iQunt == 0:
 					# Means case
-					getmatrix_parameters = np.array([iChrt, iFS, 0]) # -1 til eksponent her
+					print("Means case")
+					getmatrix_parameters = np.array([iChrt-1, iFS-1, 0]) # -1 til eksponent her
 				else:
 					# Quantile case
-					getmatrix_parameters = np.array([iChrt, iFS, iQunt])
+					print("Quantile case") 
+					getmatrix_parameters = np.array([iChrt-1, iFS-1, iQunt-1]) #### ok usikker vedr. 
 					
 				# Handle missing values
 				tempprf = getmatrix(dataprfs, getmatrix_parameters)  # Assuming getmatrix function
 				tempprf = np.where(tempprf == mvcode, np.NaN, tempprf)
 
 				cn += 1
-				rn = int(mmtyrs + avgage[iChrt - 1] - np.min(age_seq2, axis=0))  # Calculate row indices
-
+				rn = mmtcols + avgage[iChrt - 1] - np.min(age_seq2, axis=0) # rn 11x1
+				rn = rn.astype(int)
 				# Track ages with observations
-				gotsome[rn] = np.ones((mmtyrs,1)).flatten() # gotsome[rn] is shape (1,), while RHS is (11,). hmm...
+				gotsome[rn] = np.ones((mmtyrs, 1))
 
 		# Fill graph matrix
-		gmat[rn, cn - 1] = tempprf.T  # Transpose for row-wise storage
-
+		gmat[rn, cn] = (tempprf.T).flatten()  # Transpose for row-wise storage. 
+		
 		# Remove rows with no observations
 		gmat = gmat[gotsome.flatten() == 1, :]
-		ageseq3 = age_seq2[gotsome.flatten() == 1]
+		ageseq3 = age_seq2[gotsome.flatten()]  # Use gotsome.flatten() for indexing
 
-		# Interpolation for missing values within columns
+        # Interpolation for missing values within columns
 		for col in range(1, gmat.shape[1]):
-			gmat[:, col] = np.interp(ageseq3, age_seq2, gmat[:, col], where=np.isnan(gmat[:, col]))
+			gmat[:,cn] = fill_missing_values(gmat[:,cn],ageseq3-1)		#     @- missing values -@
 	
+
+
+	fnamestr = name1 + name2 + name3
+	print("\n")
+	print(fnamestr)
+	print("\n")
+	print(gmat)
 	
-	grphpath = "..." ### PLACEHOLDER
-
-	# Create filenames and save graph matrices
-	fnamestr = grphpath + name1 + name2 + name3
-	np.save(fnamestr, gmat)
-
-	if datatype == 1 and basecase:  # Assuming datatype and basecase are defined
-	# Save for comparison graphs
-		fnamestr = grphpath + name1 + name2 + "bn" + name3
-		np.save(fnamestr, gmat)
+	return (fnamestr, gmat)
 
 def makgrph2(quants_j, FSnum_j, chrtnum_j, grphtype, sorttype):
 	"""
@@ -1201,13 +1235,12 @@ def makgrph2(quants_j, FSnum_j, chrtnum_j, grphtype, sorttype):
 	Line-thickness, Linecolors, linetypes, etc.
 	"""
 
-
 	if quants_j == 0:  
-		qnum_j = quants_j.shape[0]  # Get number of rows (quantiles)
-		iQunt = 1  # Flag set to indicate presence of quantiles
-	else:
 		qnum_j = 0  # Set number of quantiles to 0
 		iQunt = 0  # Flag set to indicate absence of quantiles
+	else:
+		qnum_j = quants_j.shape[0]  # Get number of rows (quantiles)
+		iQunt = 1  # Flag set to indicate presence of quantiles
 
 	for i in range(qnum_j):  # Use range(qnum_j) for guaranteed number of iterations
 		iQunt = i + 1  # Adjust iQunt for zero-based indexing
