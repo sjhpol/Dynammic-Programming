@@ -100,7 +100,7 @@ agevec = np.concatenate([agevec, np.array([numsims])])
 
 # PATHS
 
-rootdir = os.path.dirname(__file__) # Gets base directory
+rootdir = os.getcwd() # Gets base directory
 
 if platform.system() != "Windows":
 	directory_key = "/" 		# Unix
@@ -119,9 +119,9 @@ outputpath = os.path.join(rootdir, "output") + directory_key
 # you need to have the vfi output folder locally
 if os.getlogin() == "jomo0":
 	VFI_path = r"C:\Users\jomo0\OneDrive\Skrivebord\dp_upch\VFI_output"
+elif os.getlogin() == "Simon":
+	VFI_path = ...
 elif os.getlogin() == "":
-	VFI_path =
-elif os.getlogin() == "":
-	VFI_path =
+	VFI_path = ...
 else:
 	raise EnvironmentError("User not recognized. Please set the correct path.")
