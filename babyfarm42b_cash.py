@@ -160,9 +160,7 @@ ftol      = 0.00005
 maxiter   = 1500
 feval     = 0
 
-# ngl stopped this into Google Gemini because I was getting frustrated. Let's hope it still works!!
-
-# STUFF FOR STANDARD ERRORS. IGNORE FOR NOW
+# STUFF FOR STANDARD ERRORS. KIND OF A STRECH GOAL NGL
 _="""
 numparms = parmvec.size
 zerovec = np.ones((numparms, 1))
