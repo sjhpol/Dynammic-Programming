@@ -42,7 +42,7 @@ quants_rt = 0.5
 quantmin = 10
 checktie = 1
 capscale = 1  # 1 => variables in charts are avgs of ratios; 2 => ratios of averages
-prnres = 2 # print results
+prnres = 0 # print results. default 2
 prngrph = 1 # print graphs
 
 r_rf = 0.04  # Risk-free ROR

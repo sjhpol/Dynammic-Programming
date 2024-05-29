@@ -2,7 +2,7 @@ import numpy as np
 from variables import *
 from scipy.stats import norm
 from functions import logitrv, logit
-from getfarmdat43 import load_file, datasetup, removeFE
+from utility_functions import load_file, removeFE
 
 
 def getchrt(data, cohorts_j):
@@ -624,7 +624,7 @@ def weighted_mean(data, weights, alive_indicator):
   else:
     return np.mean(data * weights) / alive_indicator
 
-def loadSims(parmvec, subdir="iofiles"):
+def loadSims(parmvec, k_0, subdir="iofiles"):
 	"""
 	This function is run after onerun(.), and transform our outputs to outputs, that we can graph. 
 	And also use to calculate SMD-criterion. So it's very useful!!!
@@ -677,10 +677,6 @@ def loadSims(parmvec, subdir="iofiles"):
 	hetag2 = ag2[ftype_sim]
 	hetgam = gam[ftype_sim]
 	alp = 1 - hetag2 - hetgam
-
-	(TFPaggshks, TFP_FE, TFPaggeffs, tkqntdat, DAqntdat, CAqntdat, nkqntdat, gikqntdat, 
-  	 ykqntdat, divqntdat, dvgqntdat, obsavgdat, tkqcnts, divqcnts, dvgqcnts, std_zi, zvec, 
-	 fevec, k_0, optNK, optKdat, countadj) = datasetup(gam,ag2,nshft,fcost)
 
 	# Calculate optimal capital stock
 	optKSim = (k_0 * np.exp(feshks))**(1.0 / alp)

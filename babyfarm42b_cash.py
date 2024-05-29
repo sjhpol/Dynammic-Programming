@@ -1,19 +1,36 @@
 import numpy as np
+import os
+from pathlib import Path
+
 from getfarmdat43 import loaddat, initdist, dataprofs, datasetup, fbillvec, getTFP
 from simcrit41 import getgrids, makepvecs, tauch
+from utility_functions import load_file # Functions that get called from several files have to be moved to a third file to avoid 'circular imports'
 from markch import markch
+import platform
 
 from variables import *
 from functions import logitrv, logit
 
-# We can automate this! :)
-rootdir = r"C:\Users\Simon\Downloads\Jones_Pratap_AER_2017-0370_Archive\Jones_Pratap_AER_2017-0370_Archive\estimation_fake_copy"
 runnumber = ""
-datapath = rootdir + "data\\Full_Sample\\"
-grphpath = rootdir + "graphs\\"
-iopath = rootdir + "iofiles\\"
-bootpath = rootdir + "bootlock\\"
-rulecall = rootdir + "ccode\\babyfarm18b\\x64\\debug\\babyfarm18b.exe"
+
+# We use os.path here to achieve platform independence
+rootdir = os.path.dirname(__file__) # Gets base directory
+
+if platform.system() != "Windows":
+	directory_key = "/" 		# Unix
+	executable_extension = ""
+else:	
+	directory_key = "\\" 		# Windows
+	executable_extension = ".exe"
+
+rulecall = os.path.join(rootdir, "ccode") + directory_key + "babyfarm18b" + executable_extension
+iopath = os.path.join(rootdir, "iopath") + directory_key
+datapath = os.path.join(rootdir, "data") + directory_key
+datapath = os.path.join(datapath, "Full_Sample") + directory_key
+grphpath = os.path.join(rootdir, "graphs") + directory_key
+bootpath = os.path.join(rootdir, "bootlock") + directory_key
+
+print(f"iopath: {iopath}")
 
 outfile = rootdir + "babyfarm42b_cash.out"
 output_file = open(outfile, "w")
@@ -118,15 +135,16 @@ prefparms, finparms, gam, ag2, nshft, fcost = makepvecs(parmvec, betamax, linpre
 TFPaggshks, TFP_FE, TFPaggeffs, tkqntdat, DAqntdat, CAqntdat, nkqntdat, gikqntdat, \
 	ykqntdat, divqntdat, dvgqntdat, obsavgdat, tkqcnts, divqcnts, dvgqcnts, std_zi,\
 	zvec, fevec, k_0, optNK, optKdat, countadj = datasetup(gam, ag2, nshft, fcost, rloutput,\
-														   totcap, intgoods, obsmat, farmtype, av_cows, famsize)
+														   totcap, intgoods, obsmat, farmtype, av_cows, famsize,
+														   datawgts, chrttype, iobsmat, dvgobsmat, 
+			  												dividends, divgrowth, LTKratio, debtasst, nkratio, gikratio,
+			    											CAratio, ykratio, dumdwgts, avgage)
 
 # datadscr her. Den laver graphs! (og sorterer med TFP, men det kan vi tage senere).
 # (data describe)
 
 # getaggrph
 # get aggregate graphs her! Laver også graphs
-
- # 					HER KALDER VI VFI				#
 
 numparms = parmvec.shape[0]
 fixvals = parmvec
