@@ -141,7 +141,7 @@ TFPaggshks, TFP_FE, TFPaggeffs, tkqntdat, DAqntdat, CAqntdat, nkqntdat, gikqntda
 numparms = parmvec.shape[0]
 fixvals = parmvec
 zerovec = 1 					# Note, that this becomes a vector later <_<. Also never has zeroes
-onerun(parmvec, betamax, linprefs, nobeq, w_0, bigR, numFTypes, inadaU, nonshft, noDScost, nofcost,
+onerun(parmvec, fixvals, betamax, linprefs, nobeq, w_0, bigR, numFTypes, inadaU, nonshft, noDScost, nofcost,
 		  	nocolcnst, prnres, noReneg, finparms0, idioshks, randrows,
 		   rloutput, totcap, intgoods, obsmat,
 		   farmtype, av_cows, famsize, datawgts, chrttype, iobsmat,

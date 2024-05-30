@@ -1371,7 +1371,7 @@ def makewgtvec(tkqnt, divqnt, dvgqnt, DAqnt, CAqnt, nkqnt, gikqnt, ykqnt, obsavg
 	return wgtvec
 
 
-def onerun(parmvec, betamax, linprefs, nobeq, w_0, bigR, numFTypes, inadaU, nonshft, noDScost, nofcost,
+def onerun(parmvec, fixvals, betamax, linprefs, nobeq, w_0, bigR, numFTypes, inadaU, nonshft, noDScost, nofcost,
 		  	nocolcnst, prnres, noReneg, finparms0, idioshks, randrows,
 		   rloutput, totcap, intgoods, obsmat,
 		   farmtype, av_cows, famsize, datawgts, chrttype, iobsmat,
@@ -1379,11 +1379,10 @@ def onerun(parmvec, betamax, linprefs, nobeq, w_0, bigR, numFTypes, inadaU, nons
 		   gikratio, CAratio, ykratio, dumdwgts, numsims, avgage):
 	# Initialize placeholders and variables
 	zero_vec = np.zeros_like(parmvec)
-	fix_vals = np.ones_like(parmvec)  # Replace with actual fixed values
 	parm_trans = 1  # Assuming some transformation flag, replace if needed
 	dumswgts = np.ones((numsims, timespan))
 
-	all_parms = parmvec * zero_vec + fix_vals * (1 - zero_vec)
+	all_parms = parmvec * zero_vec + fixvals * (1 - zero_vec)
 
 	if parm_trans == 1:
 		pref_parms, fin_parms, gam, ag2, nshft, fcost = makepvecs(all_parms, betamax, linprefs, nobeq, w_0, bigR, numFTypes, inadaU, nonshft, noDScost, nofcost,
@@ -1430,7 +1429,6 @@ def onerun(parmvec, betamax, linprefs, nobeq, w_0, bigR, numFTypes, inadaU, nons
 	np.savetxt(f'{iopath}fevec.txt', fevec)
 	np.savetxt(f'{iopath}zshks.txt', zshks)
 	np.savetxt(f'{iopath}feshks.txt', feshks)
-	np.savetxt(f'{iopath}fevec.txt', fevec)
 
 	### TODO: HERE THEY CALL THE C PROGRAM
 	## Add the python version of the C

@@ -21,20 +21,20 @@ prefparmsvec = np.loadtxt(f"{iopath}prefparms.txt", dtype=float)
 finvec     = np.loadtxt(f"{iopath}finparms.txt", dtype=float)
 
 # the data we interpolate over
-assetvec    = np.loadtxt(f"{iopath}assetvec.txt", dtype=float)
-equityvec    = np.loadtxt(f"{iopath}equityvec.txt", dtype=float)
-totassetvec = np.loadtxt(f"{iopath}totassetvec.txt", dtype=float)
-debtvec     = np.loadtxt(f"{iopath}debtvec.txt", dtype=float)
-capitalvec  = np.loadtxt(f"{iopath}capitalvec.txt", dtype=float)
-lagcapvec   = np.loadtxt(f"{iopath}lagcapvec.txt", dtype=float) # Den er tom?
-NKratiovec  = np.loadtxt(f"{iopath}NKratiovec.txt", dtype=float)
-cashvec     = np.loadtxt(f"{iopath}cashvec.txt", dtype=float)
+assetvec    = np.loadtxt(f"{iopath}Astate.txt", dtype=float)
+equityvec    = np.loadtxt(f"{iopath}Estate.txt", dtype=float)
+totassetvec = np.loadtxt(f"{iopath}TAstate.txt", dtype=float)
+debtvec     = np.loadtxt(f"{iopath}Bstate.txt", dtype=float)
+capitalvec  = np.loadtxt(f"{iopath}Kstate.txt", dtype=float)
+lagcapvec   = np.loadtxt(f"{iopath}lagKstate.txt", dtype=float) # Den er tom?
+NKratiovec  = np.loadtxt(f"{iopath}NKState.txt", dtype=float)
+cashvec     = np.loadtxt(f"{iopath}Cstate.txt", dtype=float)
 
 # Shocks
 zvec            = np.loadtxt(f"{iopath}zvec.txt", dtype=float)
 fevec           = np.loadtxt(f"{iopath}fevec.txt", dtype=float)
 gkvec           = np.loadtxt(f"{iopath}gkvec.txt", dtype=float)
-wageprofilevec  = np.loadtxt(f"{iopath}wageprofilevec.txt", dtype=float)
+wageprofilevec  = np.loadtxt(f"{iopath}wprof.txt", dtype=float)
 
 # Getting the shapes that we need for the interpolation vectors
 assetNum: int    = assetvec.shape[0]
@@ -166,7 +166,7 @@ def getUtility(cons: float) -> float:
 
     return utility
 
-print(getUtility(5.0))
+# print(getUtility(5.0))
 
 # Calculates how much bequests you make. Based on Denardi.
 # tauBeq is the arveskatterate (tau bequest).
@@ -185,7 +185,7 @@ def NetBequest(amountBequestedP: float) -> float:
     return net_bequest
 
 
-print(NetBequest(1000.0)) # Burde ikke ændre noget, da skatterate = 0%
+# print(NetBequest(1000.0)) # Burde ikke ændre noget, da skatterate = 0%
 
 # utility from a net bequest for a single person
 # phi_j(b_net) = phi_j*( (b_net+K_j)^(1-nu) )/(1-nu)
@@ -199,7 +199,7 @@ def UBeqSingle(netBequestP: float) -> float:
 
     return utils
 
-UBeqSingle(100.0)
+# UBeqSingle(100.0)
 
 # double AfterTaxIncome(double y);
 # Returns post-tax income. Run it often. Very good!
@@ -223,8 +223,8 @@ def AfterTaxIncome(y: float) -> float:
     else:
         return incomeBrk[5] + (1 - taxMar[6]) * (y - taxBrk[5])
 
-print(AfterTaxIncome(25000))
-print(AfterTaxIncome(-10))
+# print(AfterTaxIncome(25000))
+# print(AfterTaxIncome(-10))
 
 # You pass in 3 list of floats, and it sets the third list.
 # after-tax income at bracket points, used to calculate the vector, that we need for post-tax calculations
@@ -248,7 +248,7 @@ def getBaseRevenues(capital: float, igoods: float, gamma: float, ag2: float) -> 
     return pow(capital, gamma) * pow(igoods + igshift, ag2)
 
 
-getBaseRevenues(100.0, 50.0, 2.0, 2.0)
+# getBaseRevenues(100.0, 50.0, 2.0, 2.0)
 
 # Locates nearest point _below_ x in a sorted array
 # Gives the dimension. Breaks in edge-cases.
@@ -260,16 +260,16 @@ def Locate(Xarray: npt.ArrayLike, x: float) -> int:
     return max(idx, 0) # Bounds our index to the left
 
 # Example usage:
-Xarray = np.array([1, 3, 5])  # Assuming Xarray is sorted in ascending order
-
-Xarray_unsorted = np.array([5,3,1])
-x = 15  # Target value
-
-nearest_below_index = Locate(Xarray, x)
-print(f"Index of nearest point below x {x}:", nearest_below_index)
-
-nearest_below_index_unsorted = Locate(Xarray_unsorted, x)
-print(f"Index of (unsorted) nearest point below x {x}:", nearest_below_index)
+# Xarray = np.array([1, 3, 5])  # Assuming Xarray is sorted in ascending order
+#
+# Xarray_unsorted = np.array([5,3,1])
+# x = 15  # Target value
+#
+# nearest_below_index = Locate(Xarray, x)
+# print(f"Index of nearest point below x {x}:", nearest_below_index)
+#
+# nearest_below_index_unsorted = Locate(Xarray_unsorted, x)
+# print(f"Index of (unsorted) nearest point below x {x}:", nearest_below_index)
 
 # locateClosest is just an inferior version of Locate. Wunderbar.
 
@@ -296,7 +296,7 @@ def GetLocation(xP: np.ndarray, x: float) -> Tuple[int, float]:
     return Ind1, weight
 
 # test
-print(GetLocation(assetvec, 2.1))
+# print(GetLocation(assetvec, 2.1))
 
 # double getbaseIGoods(double capital, double eTFP, double gag, double agag, double ag3)
 # Finding ideal igoods given capital stock and eTFP (e_total factor productivity. What is 'e'?).
@@ -612,7 +612,7 @@ valfuncWork, bestCWork, bestNPIWork = GetRulesWorker(assetvec, wageprofilevec, v
 postliqAssets = np.zeros((lagcapNum, totassetNum, debtNum))
 postliqNetWorth = np.zeros((lagcapNum, totassetNum, debtNum))
 postliqNWIndex = np.zeros((lagcapNum, totassetNum, debtNum))
-retNWIndex       = np.zeros((lagcapNum, totassetNum, debtNum));
+retNWIndex       = np.zeros((lagcapNum, totassetNum, debtNum))
 
 @jit(nopython=True)
 def getliqIndex(assetvec: np.ndarray, totassetvec: np.ndarray, lagcapvec: np.ndarray,
@@ -1049,7 +1049,7 @@ valfuncFarm, bestCashIndexFarm, bestDebtIndexFarm, bestIntRateFarm, bestKIndexFa
 #lifespan = 2
 
 size = 1
-equityAssignments = getAssignmentVec(equityNum, size);
+equityAssignments = getAssignmentVec(equityNum, size)
 
 
 # We structure this into tuples so that, here at the end, we can package the entire thing into *FAST*
@@ -1078,23 +1078,23 @@ def main_loop(input_op, output_op, input_liq, output_liq) :
 
 output_final_op, output_final_liq = main_loop(getOperatingDec_input, getOperatingDec_output, getliqDecision_input, getLiqDecision_output) 
 
+
 # Den dropper dem her lige nu i dit default usr/directory. Oh well!
-np.save("feValues", feValues)
-np.save("feValues", feValues)
-np.save("zValues", zValues)
-np.save("totassetvec", totassetvec)
-np.save("debtvec", debtvec)
-np.save("equityvec", equityvec)
-np.save("cashvec", cashvec)
-np.save("lagcapvec", lagcapvec)
-np.save("liqDecisionMat", liqDecisionMat)
-np.save("fracRepaidMat", fracRepaidMat)
-np.save("bestIntRateFarm", bestIntRateFarm)
-np.save("bestCashFarm", bestCashFarm)
-np.save("bestDividendFarm", bestDividendFarm)
-np.save("bestKFarm", bestKFarm)
-np.save("bestNKratFarm", bestNKratFarm)
-np.save("bestDebtFarm", bestDebtFarm)
+np.savetxt("VFI_output/feValues", feValues)
+np.savetxt("VFI_output/zValues", zValues)
+np.savetxt("VFI_output/totassetvec", totassetvec)
+np.savetxt("VFI_output/debtvec", debtvec)
+np.savetxt("VFI_output/equityvec", equityvec)
+np.savetxt("VFI_output/cashvec", cashvec)
+np.savetxt("VFI_output/lagcapvec", lagcapvec)
+np.savetxt("VFI_output/liqDecisionMat", liqDecisionMat)
+np.savetxt("VFI_output/fracRepaidMat", fracRepaidMat)
+np.savetxt("VFI_output/bestIntRateFarm", bestIntRateFarm)
+np.savetxt("VFI_output/bestCashFarm", bestCashFarm)
+np.savetxt("VFI_output/bestDividendFarm", bestDividendFarm)
+np.savetxt("VFI_output/bestKFarm", bestKFarm)
+np.savetxt("VFI_output/bestNKratFarm", bestNKratFarm)
+np.savetxt("VFI_output/bestDebtFarm", bestDebtFarm)
 
 """
 TODO FOR IMPLEMENTATION.

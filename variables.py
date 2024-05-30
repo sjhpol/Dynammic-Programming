@@ -120,7 +120,7 @@ outputpath = os.path.join(rootdir, "output") + directory_key
 if os.getlogin() == "jomo0":
 	VFI_path = r"C:\Users\jomo0\OneDrive\Skrivebord\dp_upch\VFI_output"
 elif os.getlogin() == "Simon":
-	VFI_path = ...
+	VFI_path = r"C:\Users\Simon\PycharmProjects\Dynamic Programming\VFI_output"
 elif os.getlogin() == "":
 	VFI_path = ...
 else:
