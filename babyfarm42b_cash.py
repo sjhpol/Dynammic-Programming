@@ -37,6 +37,9 @@ randrows, idioshks, numsims = initdist(IDs, farmtype, initstate, obsmat, iobsmat
 dumdwgts = np.ones_like(datawgts)
 dumswgts = np.ones((numsims, timespan))
 
+# Create Age vector
+agevec = np.concatenate([agevec, np.array([numsims])])
+
 # Save variables to path
 np.savetxt(f'{iopath}agevec.txt', agevec)
 np.savetxt(f'{iopath}sizevec.txt', sizevec)

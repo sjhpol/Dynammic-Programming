@@ -535,7 +535,6 @@ def makepvecs2(parmvec, linprefs, w_0, bigR, inadaU, nonshft, noDScost, nofcost,
 	return prefparms, finparms, gam, ag2, nshft, fcost
 
 
-
 def prnparms(nu, c_0, bta, cfloor, finalMPC, bigR, thetaB, c_1, chi, alp, gam, nshft, lam, phi, zta, dlt, fcost,
 			 colcnst, noReneg, w_0):
 	print("Coefficient of relative risk aversion =", nu)
@@ -1649,10 +1648,10 @@ def onerun(parmvec, fixvals, betamax, linprefs, nobeq, w_0, bigR, numFTypes, ina
 	optNK = optNK[randrows]  # Ensure `randrows` is defined
 
 	# Stupid hack!
-	job = np.array((1.0))
+	job = np.array([1.0])
 
 	# Save intermediate results, replace `save_path` with actual save logic if needed
-	#np.savetxt(f'{iopath}job.txt', job)
+	np.savetxt(f'{iopath}job.txt', job)
 	np.savetxt(f'{iopath}pref_parms.txt', pref_parms)
 	np.savetxt(f'{iopath}fin_parms.txt', fin_parms)
 	np.savetxt(f'{iopath}zvec.txt', zvec)
@@ -1663,6 +1662,8 @@ def onerun(parmvec, fixvals, betamax, linprefs, nobeq, w_0, bigR, numFTypes, ina
 	### TODO: HERE THEY CALL THE C PROGRAM
 	## Add the python version of the C
 	# execret = exec(rulecall, "")  # Ensure `exec_rulecall` is defined
+
+	print("")
 
 	## WE NEED TO WAIT UNTIL THIS IS DONE AS WE NEED FILES FROM THE C CODE
 	# Load simulations

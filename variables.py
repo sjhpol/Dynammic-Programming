@@ -94,8 +94,6 @@ Cnum0 = 45  # liquid assets
 # Number of simulations
 numsims = 90000
 
-# Create Age vector
-agevec = np.concatenate([agevec, np.array([numsims])])
 
 
 # PATHS

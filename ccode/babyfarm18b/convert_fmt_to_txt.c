@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
     if (switchMac==1)  // Hjalte
     {
         strcpy(rootdir,"/Users/hjaltewallin/Code/Jones_Pratap_AER_2017-0370_Archive/estimation_fake/iofiles/");
-        strcpy(outputdir, "/Users/hjaltewallin/Code/DP-MESTERNE/Dynammic-Programming/iofiles/"); 
+        strcpy(outputdir, "/Users/hjaltewallin/Code/DP-MESTERNE/Dynammic-Programming/seje_rigtige_iofiles/"); 
         strcpy(datadir, "/Users/hjaltewallin/Code/DP-MESTERNE/Dynammic-Programming/data/"); 
     }
     else if (switchMac==0) 
@@ -85,7 +85,33 @@ int main(int argc, char *argv[])
     writeGMatrixToFile(strcat(strcpy(fullpath, outputdir), "simwgts.txt"), &simwgtsPtr);
     writeGMatrixToFile(strcat(strcpy(fullpath, outputdir), "ftype_sim.txt"), &ftype_simPtr);
 
-    
+    // Debuggiong the other boys
+    GMatrix agevecPtr, sizevecPtr, gkvecPtr, AstatePtr, EstatePtr, TAstatePtr, BstatePtr, KstatePtr, lagKstatePtr, NKStatePtr, CstatePtr;
+
+    agevecPtr   = gau5read(strcat(strcpy(fullpath,rootdir),"agevec.fmt")); 
+    sizevecPtr  = gau5read(strcat(strcpy(fullpath,rootdir),"sizevec.fmt")); 
+    gkvecPtr    = gau5read(strcat(strcpy(fullpath,rootdir),"gkvec.fmt")); 
+    AstatePtr   = gau5read(strcat(strcpy(fullpath,rootdir),"Astate.fmt")); 
+    EstatePtr   = gau5read(strcat(strcpy(fullpath,rootdir),"Estate.fmt")); 
+    TAstatePtr  = gau5read(strcat(strcpy(fullpath,rootdir),"TAstate.fmt")); 
+    BstatePtr   = gau5read(strcat(strcpy(fullpath,rootdir),"Bstate.fmt")); 
+    KstatePtr   = gau5read(strcat(strcpy(fullpath,rootdir),"Kstate.fmt")); 
+    lagKstatePtr= gau5read(strcat(strcpy(fullpath,rootdir),"lagKstate.fmt")); 
+    NKStatePtr  = gau5read(strcat(strcpy(fullpath,rootdir),"NKState.fmt")); 
+    CstatePtr   = gau5read(strcat(strcpy(fullpath,rootdir),"Cstate.fmt")); 
+
+    writeGMatrixToFile(strcat(strcpy(fullpath,outputdir),"agevec.txt"), &agevecPtr); 
+    writeGMatrixToFile(strcat(strcpy(fullpath,outputdir),"sizevec.txt"), &sizevecPtr); 
+    writeGMatrixToFile(strcat(strcpy(fullpath,outputdir),"gkvec.txt"), &gkvecPtr); 
+    writeGMatrixToFile(strcat(strcpy(fullpath,outputdir),"Astate.txt"), &AstatePtr); 
+    writeGMatrixToFile(strcat(strcpy(fullpath,outputdir),"Estate.txt"), &EstatePtr); 
+    writeGMatrixToFile(strcat(strcpy(fullpath,outputdir),"TAstate.txt"), &TAstatePtr); 
+    writeGMatrixToFile(strcat(strcpy(fullpath,outputdir),"Bstate.txt"), &BstatePtr); 
+    writeGMatrixToFile(strcat(strcpy(fullpath,outputdir),"Kstate.txt"), &KstatePtr); 
+    writeGMatrixToFile(strcat(strcpy(fullpath,outputdir),"lagKstate.txt"), &lagKstatePtr); 
+    writeGMatrixToFile(strcat(strcpy(fullpath,outputdir),"NKState.txt"), &NKStatePtr); 
+    writeGMatrixToFile(strcat(strcpy(fullpath,outputdir),"Cstate.txt"), &CstatePtr); 
+
     return 0;
 }
 

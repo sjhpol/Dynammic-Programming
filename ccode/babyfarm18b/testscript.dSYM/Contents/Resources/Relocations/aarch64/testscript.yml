@@ -1,7 +1,0 @@
----
-triple:          'arm64-apple-darwin'
-binary-path:     '/Users/hjaltewallin/Code/DP-MESTERNE/Dynammic-Programming/ccode/babyfarm18b/testscript'
-relocations:
-  - { offset: 0x1A, size: 0x8, addend: 0x0, symName: _main, symObjAddr: 0x0, symBinAddr: 0x100003E34, symSize: 0xB0 }
-  - { offset: 0x2D9, size: 0x8, addend: 0x0, symName: _main, symObjAddr: 0x0, symBinAddr: 0x100003E34, symSize: 0xB0 }
-...

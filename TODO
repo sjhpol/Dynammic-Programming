@@ -1,21 +1,20 @@
 # Mindre todo-liste med diverse ting i, når jeg ikke ved, hvad jeg skal tage mig til 
 
-- Lav en gcc compilation af babyfarm18b.c der funger til Windows. 
--- Optionelt lir: Lav noget der automatisk detekter, hvilken platform du kører på, og så kalder de rigtige flag
---- (tror det ville være relativt ligetil i Python vha. 'import os')
+- simcrit = 542
+-- Simon's implementering af outer loop!!
 
-- Find ud af, hvilke elementer der skal i summary statistics
--- Pop den i Overleaf, og modificer lidt, så det ser godt ud
--- Skriv valgene ned.
+- grafer for (x, y, z) (\beta, \nu, simcrit)
+-            (x, y, z) (\lambda, \chi, simcrit) 
 
-- Lav nogen goodness of fit-grafer (Hjalte's hovedpine)
--- Start med kapital. Så dem alle
-* Den logiske kæde, som vi skal bruge, for at komme frem til GOF-grafer, er:
-- *onerun* - datasetup(✔️) -> dataprofs(✔️) -> grphmtx(✔️) -> makgrph2(1/2) -> doplot(bare matplotlib)
--                                               ^ bruger filer ^
+- comparative statics!! (one-run x 8)
+
+- Fix Python-simulation
+
+- sum stats (div. pr. techtype)
+
+- Modificer sumstats til at være år = 0
+
+- Algoritmer i Overleaf.
 
 - Skrev mere teori ind i Overleaf.
 -- Bl.a. tag udgangspunkt i økonometrisk strategi fra online appendix
--- Skriv ud hvordan financial bargaining faktisk fungerer
-
-- Begynd at tænke på, hvad vi ellers skal skrive om selve empirien; motivation, konklusion osv. 
