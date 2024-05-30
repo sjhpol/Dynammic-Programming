@@ -124,4 +124,5 @@ elif os.getlogin() == "Simon":
 elif os.getlogin() == "":
 	VFI_path = ...
 else:
-	raise EnvironmentError("User not recognized. Please set the correct path.")
+	VFI_path = "/Users/hjaltewallin/Code/DP-MESTERNE"
+	#raise EnvironmentError("User not recognized. Please set the correct path.")

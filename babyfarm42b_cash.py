@@ -132,6 +132,9 @@ TFPaggshks, TFP_FE, TFPaggeffs, tkqntdat, DAqntdat, CAqntdat, nkqntdat, gikqntda
 			  												dividends, divgrowth, LTKratio, debtasst, nkratio, gikratio,
 			    											CAratio, ykratio, dumdwgts, avgage)
 
+
+
+
 # datadscr her. Den laver graphs! (og sorterer med TFP, men det kan vi tage senere).
 # (data describe)
 
