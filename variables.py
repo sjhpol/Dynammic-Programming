@@ -109,10 +109,10 @@ else:
 	directory_key = "\\" 		# Windows
 	executable_extension = ".exe"
 
+rootdir = os.path.join(rootdir,"/DP-MESTERNE/Dynammic-Programming/")
 rulecall = os.path.join(rootdir, "ccode") + directory_key + "babyfarm18b" + executable_extension
 iopath = os.path.join(rootdir, "iofiles") + directory_key
-datapath = os.path.join(rootdir, "data")
-datapath = os.path.join(datapath, "Full_Sample") + directory_key
+datapath = os.path.join(os.path.join(rootdir, "data"), "Full_Sample") + directory_key
 grphpath = os.path.join(rootdir, "graphs") + directory_key
 outputpath = os.path.join(rootdir, "output") + directory_key
 
@@ -120,9 +120,9 @@ outputpath = os.path.join(rootdir, "output") + directory_key
 if os.getlogin() == "jomo0":
 	VFI_path = r"C:\Users\jomo0\OneDrive\Skrivebord\dp_upch\VFI_output"
 elif os.getlogin() == "":
-	VFI_path =
-elif os.getlogin() == "":
-	VFI_path =
+	VFI_path = "..."
+#elif os.getlogin() == "":
+#	VFI_path = "..."
 else:
 	VFI_path = "/Users/hjaltewallin/Code/DP-MESTERNE"
 	#raise EnvironmentError("User not recognized. Please set the correct path.")

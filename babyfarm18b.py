@@ -134,16 +134,16 @@ SLfrac: float         = phi * (1 - delta + eGK) / bigG  # irreversibility costs 
 # and associated exponents that we're interested in using. This returns the whole set.
 @jit(nopython=True)
 def prodFnParms(alpha0: float, gamma0: float) -> tuple[float, float, float, float, float]:
-  alpha: float = alpha0;
-  gamma: float = gamma0;
-  ag2: float   = 1 - alpha - gamma;
-  ag3: float   = 1 / (alpha + gamma);
-  gag: float   = (gamma)*(ag3);
-  agag: float  = pow(ag2, ag3);
+  alpha: float = alpha0
+  gamma: float = gamma0
+  ag2: float   = 1 - alpha - gamma
+  ag3: float   = 1 / (alpha + gamma)
+  gag: float   = (gamma)*(ag3)
+  agag: float  = pow(ag2, ag3)
 
   return alpha, gamma, ag2, ag3, gag, agag
 
-alpha, gamma, ag2, ag3, gag, agag = prodFnParms(alpha1, gamma1)
+# alpha, gamma, ag2, ag3, gag, agag = prodFnParms(alpha1, gamma1)
 
 # alpha, gamma, ag2, ag3, gag, agag = prodFnParms(alpha2, gamma2)
 
@@ -314,7 +314,6 @@ def getBaseIGoods(capital: float,
         igoods = 0
     return igoods
 
-print(getBaseIGoods(100.0, 1.0, 1.0, 1.0, 1.0, 1.0))
 
 # Used for the markov chains and shocks.
 # creates a transition matrix
@@ -818,9 +817,9 @@ def getliqDecision(totassetvec: np.ndarray,
                                 fracRepaidMat[ageInd, iFType, iFE, iZ, iLagK, iTotAsset, iDebt] = thisFrac
                                 valfuncMat[ageInd, iFType, iFE, iZ, iLagK, iTotAsset, iDebt] = thisVal
                 else:
-                    for iFType in prange(ftNum):
-                        for iFE in prange(feNum):
-                            for iZ in prange(zNum2):
+                    for iFType in range(ftNum):
+                        for iFE in range(feNum):
+                            for iZ in range(zNum2):
                                 valfuncMat[ageInd, iFType, iFE, iZ, iLagK, iTotAsset, iDebt] = liqValue
 
                                 lowInd, lowWeight = GetLocation(valfuncFarm[ageInd, iFType, iFE, iZ, iLagK], liqValue)

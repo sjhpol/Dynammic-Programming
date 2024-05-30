@@ -853,7 +853,7 @@ def dataprofs(FType, farmsize, FSstate, timespan, datawgts, checktie, chrttype, 
 		key, graph = grphmtx(var[0], var[1], 0, var[2], FSgroups, chrtnum, timespan, sorttype, avgage)
 		real_data_matrixes[key] = graph
 	
-	print(real_data_matrixes)
+	
 	
 	return tkqntdat, DAqntdat, CAqntdat, nkqntdat, gikqntdat, ykqntdat, divqntdat, dvgqntdat, obsavgdat, tkqcnts, divqcnts, dvgqcnts, countadj
 
