@@ -1,0 +1,23 @@
+---
+triple:          'arm64-apple-darwin'
+binary-path:     '/Users/hjaltewallin/Code/DP-MESTERNE/Dynammic-Programming/ccode/babyfarm18b/convert_fmt_to_txt'
+relocations:
+  - { offset: 0x1A, size: 0x8, addend: 0x0, symName: _main, symObjAddr: 0x0, symBinAddr: 0x100002520, symSize: 0xCEC }
+  - { offset: 0x32F, size: 0x8, addend: 0x0, symName: _rootdir, symObjAddr: 0x363D, symBinAddr: 0x100008000, symSize: 0x0 }
+  - { offset: 0x346, size: 0x8, addend: 0x0, symName: _outputdir, symObjAddr: 0x3769, symBinAddr: 0x10000812C, symSize: 0x0 }
+  - { offset: 0x35D, size: 0x8, addend: 0x0, symName: _datadir, symObjAddr: 0x3895, symBinAddr: 0x100008258, symSize: 0x0 }
+  - { offset: 0x374, size: 0x8, addend: 0x0, symName: _fullpath, symObjAddr: 0x39C1, symBinAddr: 0x100008384, symSize: 0x0 }
+  - { offset: 0x387, size: 0x8, addend: 0x0, symName: _writeGMatrixToFile, symObjAddr: 0x1360, symBinAddr: 0x100003880, symSize: 0x110 }
+  - { offset: 0x425, size: 0x8, addend: 0x0, symName: _readDoubleList, symObjAddr: 0x1240, symBinAddr: 0x100003760, symSize: 0x120 }
+  - { offset: 0x42D, size: 0x8, addend: 0x0, symName: _writeGMatrixToFile, symObjAddr: 0x1360, symBinAddr: 0x100003880, symSize: 0x110 }
+  - { offset: 0x4C5, size: 0x8, addend: 0x0, symName: _gau5write, symObjAddr: 0x10D4, symBinAddr: 0x1000035F4, symSize: 0x16C }
+  - { offset: 0x4CD, size: 0x8, addend: 0x0, symName: _readDoubleList, symObjAddr: 0x1240, symBinAddr: 0x100003760, symSize: 0x120 }
+  - { offset: 0x534, size: 0x8, addend: 0x0, symName: _gau5read, symObjAddr: 0xED4, symBinAddr: 0x1000033F4, symSize: 0x200 }
+  - { offset: 0x53C, size: 0x8, addend: 0x0, symName: _gau5write, symObjAddr: 0x10D4, symBinAddr: 0x1000035F4, symSize: 0x16C }
+  - { offset: 0x5EE, size: 0x8, addend: 0x0, symName: _gread, symObjAddr: 0xD38, symBinAddr: 0x100003258, symSize: 0x19C }
+  - { offset: 0x5F6, size: 0x8, addend: 0x0, symName: _gau5read, symObjAddr: 0xED4, symBinAddr: 0x1000033F4, symSize: 0x200 }
+  - { offset: 0x698, size: 0x8, addend: 0x0, symName: _zeroGMat, symObjAddr: 0xCEC, symBinAddr: 0x10000320C, symSize: 0x4C }
+  - { offset: 0x6A0, size: 0x8, addend: 0x0, symName: _gread, symObjAddr: 0xD38, symBinAddr: 0x100003258, symSize: 0x19C }
+  - { offset: 0x6D9, size: 0x8, addend: 0x0, symName: _main, symObjAddr: 0x0, symBinAddr: 0x100002520, symSize: 0xCEC }
+  - { offset: 0x6E1, size: 0x8, addend: 0x0, symName: _zeroGMat, symObjAddr: 0xCEC, symBinAddr: 0x10000320C, symSize: 0x4C }
+...

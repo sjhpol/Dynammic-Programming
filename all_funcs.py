@@ -416,7 +416,8 @@ def getgrids(Arange, Afine, grdcoef_lv, grdcoef_rt, Enum0, TAnum0,
 	Cnum = Cnum0 - Cnum + 1
 	Cfill = setindx1(Cnum,C_min,C_max,grdcoef_lv)[1:]
 	Cstate = np.concatenate((Cstate, Cfill))
-	c_min = Cstate[0]
+	C_min = Cstate[0]
+	#C_min = 0
 	Cnum = len(Cstate)
 	Cindvec = np.arange(1, Cnum + 1)
 
