@@ -105,10 +105,12 @@ rootdir = os.getcwd() # Gets base directory
 if platform.system() != "Windows":
 	directory_key = "/" 		# Unix
 	executable_extension = ""
+	rootdir = os.path.join(rootdir,"/Users/hjaltewallin/Code/DP-MESTERNE/Dynammic-Programming/") # Hack
 else:	
 	directory_key = "\\" 		# Windows
 	executable_extension = ".exe"
 
+rootdir = os.path.join(rootdir,"/DP-MESTERNE/Dynammic-Programming/")
 rulecall = os.path.join(rootdir, "ccode") + directory_key + "babyfarm18b" + executable_extension
 iopath = os.path.join(rootdir, "iofiles") + directory_key
 datapath = os.path.join(rootdir, "data")

@@ -1032,7 +1032,7 @@ def grphmtx(dataprfs, vartype, datatype, quants_j, FSnum_j, chrtnum_j, numyrs_j,
 		sorttype: (str) Sorting type for data (e.g., 'asc', 'desc')
 	"""
 
-	print("------------- GRAPHMTX ------------")
+	#print("------------- GRAPHMTX ------------")
 
 	vartype_to_name = {
 	1: "totK",
@@ -1114,7 +1114,7 @@ def grphmtx(dataprfs, vartype, datatype, quants_j, FSnum_j, chrtnum_j, numyrs_j,
 		# Initialize graph matrix with missing values
 		gmat = np.ones((_tr2, chrtnum_j * FSnum_j)) * np.NaN  # Missing value representation
 		gmat = np.column_stack((age_seq2, gmat))
-		print(gmat.shape)
+		#print(gmat.shape)
 
 		# Track ages with observations
 		gotsome = np.zeros((_tr2, 1), dtype=int)
@@ -1125,11 +1125,11 @@ def grphmtx(dataprfs, vartype, datatype, quants_j, FSnum_j, chrtnum_j, numyrs_j,
 			for iFS in range(FSnum_j):  # Loop through firms
 				if iQunt == 0:
 					# Means case
-					print("Means case")
+					#print("Means case")
 					getmatrix_parameters = np.array([iChrt, iFS, 0]) # -1 til eksponent her
 				else:
 					# Quantile case
-					print("Quantile case") 
+					#print("Quantile case") 
 					getmatrix_parameters = np.array([iChrt, iFS, iQunt-1]) 
 					
 				# Handle missing values
@@ -1144,7 +1144,7 @@ def grphmtx(dataprfs, vartype, datatype, quants_j, FSnum_j, chrtnum_j, numyrs_j,
 				gotsome[rn] = np.ones((mmtyrs, 1))
 
 				# Fill graph matrix
-				print(f"gmat cn {cn}")
+				#print(f"gmat cn {cn}")
 				gmat[rn-1, cn] = (tempprf).flatten()  # Transpose for row-wise storage. 
 		
 		# Remove rows with no observations
@@ -1489,20 +1489,61 @@ def makgrph2(quants_j, FSnum_j, chrtnum_j, grphtype, sorttype):
 			doplot(allboth, figtitle, figname, figdim)
 			"""
 
-def doplot(real_data, simulated_values):
+def doplot(real_dict, sim_dict):
 	# Loop through each data series 
-	for i in range(1, real_data.shape[1]):
-		real_data = real_data[:, i-1]
-		simulated_values = simulated_values[:, i-1]
-		plt.plot(real_data[:, 0], real_data, label=f"Real - Series {i}")
-		plt.plot(real_data[:, 0], simulated_values, label=f"Simulated - Series {i}")
+	
+	graphs_to_plot = ["totK", "DV", "DA", "NK", "GIK", "CA", "YK", "DVG"]
+	
+	string_to_title_dict = {
+	"totK": ("Capital", "in 1000s 2011-USD"),
+	"ownK": ("Owned Capital"),
+	"TA": ("Total Assets"),
+	"D": ("Debt"),
+	"E": ("Equity"),
+	"IG": ("Int. Goods"),
+	"GI": ("Gross Invst"),
+	"DV": ("Dividends", "in 1000s 2011-USD"),
+	"Y": ("Output"),
+	"CF": ("Cashflow"),
+	"LTK": ("Leased/Total Ratio"),
+	"DA": ("Debt to Asset Ratio", "Ratio"),
+	"NK": ("N to K Ratio", "Ratio"),
+	"GIK": ("GI to K Ratio", "Ratio"),
+	"NIK": ("NI/K Ratio"),
+	"CA": ("Cash to Asset Ratio", "Ratio"),
+	"YK": ("Output to Capital Ratio", "Ratio"),
+	"DVG": ("Dividend Growth", "Growth"),
+	}
 
-	plt.xlabel("Year")
-	plt.ylabel("Value")
-	plt.title("Real vs Simulated Data")
-	plt.legend()
-	plt.grid(True)
-	plt.show()
+	for graph_string in graphs_to_plot:
+		graph_title =  string_to_title_dict[graph_string][0]
+		y_axis = string_to_title_dict[graph_string][1]
+
+		real_series = real_dict[f'{graph_string}dtHS2']
+		sim_series = sim_dict[f'{graph_string}smHS2']
+
+		high_color = "green"
+		low_color = "black"
+		sim_line_style = "--"
+		real_line_style = "..."
+		
+		color_scheme = [high_color, low_color, high_color, low_color]
+
+		plt.figure()
+
+		for i in range(2, real_series.shape[1]+1):
+			real_y = real_series[:, i-1]
+			sim_y = sim_series[:, i-1]
+			plt.plot(real_series[:, 0], real_y, label=f"Real - Series {i}", color=color_scheme[i-2])
+			plt.plot(sim_series[:, 0], sim_y, label=f"Simulated - Series {i}", color=color_scheme[i-2], linestyle=sim_line_style)
+
+		plt.xlabel("Age of operator")
+		plt.ylabel(f"{y_axis}")
+		plt.title(f"Median {graph_title}: Data (Solid) vs. Model (Dashed)")
+		#plt.legend()
+		plt.grid(True)
+		#plt.show()
+		plt.savefig(f'{outputpath}{graph_title}.png', dpi=400)
 
 def wvec2(countadj, pdim):
 	"""
@@ -1668,8 +1709,9 @@ def onerun(parmvec, fixvals, betamax, linprefs, nobeq, w_0, bigR, numFTypes, ina
 	wgtmtx = np.eye(rn) * (wgtvec ** 2)
 
 	diff = datamoms - simmoms
-	criter = diff.T @ wgtmtx @ diff
 
+	criter = diff.T @ wgtmtx @ diff
+	# Let's just do all of them
 	doplot(real_data_matrixes, sim_data_matrixes)
 
 	# Save final results

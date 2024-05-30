@@ -15,7 +15,7 @@ runnumber = ""
 
 print(f"iopath: {iopath}")
 
-outfile = rootdir + "babyfarm42b_cash.out"
+outfile = rootdir + "babyfarm42b_cash.txt"
 output_file = open(outfile, "w")
 output_file.write("\n    ")  # Write date and time
 output_file.close()
