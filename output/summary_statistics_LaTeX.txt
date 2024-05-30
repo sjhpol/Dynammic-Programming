@@ -1,0 +1,20 @@
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Variable} & \textbf{Mean} & \textbf{Median} & \textbf{Std. Dev.} & \textbf{Max} & \textbf{Min} \ 
+\midrule
+Family size 		& 1.72 & 1.50 & 0.83 & 1 & 6 \\ 
+Youngest operator age 		& 40.99 & 42.00 & 10.24 & 12 & 71 \\ 
+Average cows per farm 		& 262.46 & 164.21 & 297.20 & 8 & 1928 \\ 
+Average age 		& 40.50 & 40.50 & 8.50 & 32 & 49 \\ 
+Total capital 		& 1579.13 & 1005.54 & 1793.96 & 97 & 16760 \\ 
+Owned capital 		& 1298.64 & 826.42 & 1469.79 & 94 & 13581 \\ 
+Leased / owned capital 		& 0.16 & 0.15 & 0.12 & 0 & 1 \\ 
+Revenue 		& 112.15 & 62.18 & 154.65 & -169 & 1075 \\ 
+Divident growth 		& 0.16 & 0.47 & 12.07 & -228 & 103 \\ 
+--Variable input 		& 577.84 & 344.02 & 738.11 & 23 & 6982 \\ 
+Totals assets 		& 1814.97 & 1154.82 & 2091.22 & 106 & 19726 \\ 
+--Cash 		& 235.84 & 134.15 & 323.51 & 2 & 3486 \\ 
+Total liabilities 		& 980.04 & 593.05 & 1161.56 & 6 & 11228 \\ 
+Dividends 		& 48.89 & 21.19 & 162.87 & -381 & 3492 \\ 
+\bottomrule 
+\end{tabular}

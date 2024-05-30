@@ -9,16 +9,16 @@ import platform
 from variables import *
 from functions import logitrv, logit
 
-from all_funcs import loaddat, initdist, datasetup, getgrids, makepvecs, onerun
+from all_funcs import loaddat, initdist, datasetup, getgrids, makepvecs, onerun, generate_all_summary_statistics
 
 runnumber = ""
 
 print(f"iopath: {iopath}")
 
-outfile = rootdir + "babyfarm42b_cash.txt"
-output_file = open(outfile, "w")
-output_file.write("\n    ")  # Write date and time
-output_file.close()
+#outfile = rootdir + "babyfarm42b_cash.txt"
+#output_file = open(outfile, "w")
+#output_file.write("\n    ")  # Write date and time
+#output_file.close()
 
 srchshks = np.random.randn(100, 50)
 np.random.seed(12032013)
@@ -91,6 +91,9 @@ noReneg = [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0]
 if numFTypes == 1:
 	alp[1, :] = alp[0, :]
 	gam0[1, :] = gam0[0, :]
+
+print("Summary statistics (unconditional):")
+generate_all_summary_statistics()
 
 # Assign values from parmvec and settvec
 parmvec = np.vstack([bta, nu, c_0, c_bar, finalMPC, chi0, cfloor, alp, gam0, nshft0, lam, phi, zta, fcost0, colcnst])

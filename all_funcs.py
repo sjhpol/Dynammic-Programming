@@ -1542,6 +1542,7 @@ def doplot(real_dict, sim_dict):
 		plt.title(f"Median {graph_title}: Data (Solid) vs. Model (Dashed)")
 		#plt.legend()
 		plt.grid(True)
+
 		#plt.show()
 		plt.savefig(f'{outputpath}{graph_title}.png', dpi=400)
 
@@ -2633,28 +2634,48 @@ def generate_all_summary_statistics():
 			netinv, nikratio, iobsmat, age_2001, init_yr, init_age, av_cows, famsize, cohorts,
 			chrttype, milktype, herdtype, farmtype, avgage, datawgts, initstate) = loaddat(timespan, np.array([1, 0]), 1, chrtnum, chrtstep, sizescreen, wgtddata) # du skal ikke spørge hvorfor
 
+	output_str = """"""
+
 	# LATEX table header
-	print("\\begin{tabular}{lccccc}")
-	print("\\headrow{Variable & Mean & Median & Std. Dev. & Max & Min} \\\\")
+	output_str += "\\begin{tabular}{lccccc}\n"
+
+	output_str += "\\toprule\n"
+	output_str += "\\textbf{Variable} & \\textbf{Mean} & \\textbf{Median} & \\textbf{Std. Dev.} & \\textbf{Max} & \\textbf{Min} \\ \n"
+	output_str += "\\midrule\n"
+	#output_str += "\\headrow{Variable & Mean & Median & Std. Dev. & Max & Min} \\\\ \n"
 
 	# TODO: Implement periode-kode, som angiver, hvilken periode det er i. 
 	# Nemmere løsning: Vi opdeler dem på (år,værdi), og så snitter vi over værdi betinget på år (=0)
 
 	summary_statistic_dictionary = {
 								"Family size": famsize,
-								"youngest operator age": init_age,
-								"totals assets": totasst,
-								"average age": avgage,
-								"divident growth": divgrowth}
+								"Youngest operator age": init_age,
+								"Average cows per farm": av_cows,
+								"Average age": avgage,
+								"Total capital": totcap,
+								"Owned capital": owncap,
+								"Leased / owned capital": LTKratio,
+								"Revenue": cashflow,
+								"Divident growth": divgrowth,
+								"--Variable input": intgoods,
+								"Totals assets": totasst,
+								"--Cash": cash,
+								"Total liabilities": totliab,
+								"Dividends": dividends}
 
 	# Loop through the dictionary and calculate statistics
 	for key, element in summary_statistic_dictionary.items():
 		summary_statistic = return_individual_sum_stats(element)
 		# Format statistics for LATEX output
-		print(f"{key} \t\t& {summary_statistic[0]:.2f} & {summary_statistic[1]:.2f} & {summary_statistic[2]:.2f} & {summary_statistic[3]:.0f} & {summary_statistic[4]:.0f} \\\\")
+		output_str += f"{key} \t\t& {summary_statistic[0]:.2f} & {summary_statistic[1]:.2f} & {summary_statistic[2]:.2f} & {summary_statistic[3]:.0f} & {summary_statistic[4]:.0f} \\\\ \n"
 
 	# LATEX table footer
-	print("\\end{tabular}")
+	output_str += "\\bottomrule \n"
+	output_str += "\\end{tabular}"
+
+	with open(f"{outputpath}summary_statistics_LaTeX.txt", "w") as file:
+	  file.write(output_str)
+
 
 def return_individual_sum_stats(statistic, mvcode=-99):
     """
