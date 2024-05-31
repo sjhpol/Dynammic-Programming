@@ -332,8 +332,8 @@ int main(int argc, char *argv[])
 // Read in parameter vectors from the *txt files (read into memory as arrays)
    agevecPtr      = readDoubleList(strcat(strcpy(fullpath,rootdir),"agevec.txt")); 
    sizevecPtr     = readDoubleList(strcat(strcpy(fullpath,rootdir),"sizevec.txt")); 
-   prefvecPtr     = readDoubleList(strcat(strcpy(fullpath,rootdir),"pref_parms.txt"));
-   finvecPtr      = readDoubleList(strcat(strcpy(fullpath,rootdir),"fin_parms.txt"));  
+   prefvecPtr     = readDoubleList(strcat(strcpy(fullpath,rootdir),"prefparms.txt"));
+   finvecPtr      = readDoubleList(strcat(strcpy(fullpath,rootdir),"finparms.txt"));  
    assetPtr       = readDoubleList(strcat(strcpy(fullpath,rootdir),"Astate.txt"));
    equityPtr      = readDoubleList(strcat(strcpy(fullpath,rootdir),"Estate.txt"));
    totassetPtr    = readDoubleList(strcat(strcpy(fullpath,rootdir),"TAstate.txt"));

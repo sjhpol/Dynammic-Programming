@@ -1,6 +1,6 @@
 // Little script that uses Jones&Pratap code to convert annoying GAUSS format to a nice, god-fearing, .txt-format
 
-// Deals with GAUSS->GAUSS stuff that lives in IOFILES. But since we're calling Python->Python, 
+// Deals with GAUSS->GAUSS stuff that lives in IOFILES. But since were calling Python->Python, 
 // we don't need to call this in the inner loop. So it lives separately. 
 
 // We don't -fopenmp here, bc I've had enough of that lol
@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
     ftype_simPtr    = gau5read(strcat(strcpy(fullpath,rootdir),"ftype_sim.fmt"));
 
     // Write out .txt files
-    writeGMatrixToFile(strcat(strcpy(fullpath, outputdir), "obssim.txt"), &obsSimPtr);
+    writeGMatrixToFile(strcat(strcpy(fullpath, outputdir), "obsSim.txt"), &obsSimPtr);
     writeGMatrixToFile(strcat(strcpy(fullpath, outputdir), "iobsSim.txt"), &iobsSimPtr);
     writeGMatrixToFile(strcat(strcpy(fullpath, outputdir), "dvgobsSim.txt"), &dvgobsSimPtr);
     writeGMatrixToFile(strcat(strcpy(fullpath, outputdir), "FEshks.txt"), &FEshksPtr);
@@ -111,6 +111,42 @@ int main(int argc, char *argv[])
     writeGMatrixToFile(strcat(strcpy(fullpath,outputdir),"lagKstate.txt"), &lagKstatePtr); 
     writeGMatrixToFile(strcat(strcpy(fullpath,outputdir),"NKState.txt"), &NKStatePtr); 
     writeGMatrixToFile(strcat(strcpy(fullpath,outputdir),"Cstate.txt"), &CstatePtr); 
+
+    // Tredje runde af filer, som der kan være noget galt med
+
+  GMatrix prefvecPtr, finvecPtr, assetPtr, equityPtr, totassetPtr, debtPtr, capitalPtr, lagcapPtr, NKratioPtr, cashPtr, zvecPtr, fevecPtr, wageprofilePtr;
+
+   prefvecPtr     = gau5read(strcat(strcpy(fullpath,rootdir),"prefparms.fmt"));
+   finvecPtr      = gau5read(strcat(strcpy(fullpath,rootdir),"finparms.fmt"));     
+   zvecPtr        = gau5read(strcat(strcpy(fullpath,rootdir),"zvec.fmt"));
+   fevecPtr       = gau5read(strcat(strcpy(fullpath,rootdir),"fevec.fmt"));
+   wageprofilePtr = gau5read(strcat(strcpy(fullpath,rootdir),"wprof.fmt"));
+
+    writeGMatrixToFile(strcat(strcpy(fullpath, outputdir), "prefparms.txt"), &prefvecPtr);
+    writeGMatrixToFile(strcat(strcpy(fullpath, outputdir), "finparms.txt"), &finvecPtr);
+    writeGMatrixToFile(strcat(strcpy(fullpath, outputdir), "zvec.txt"), &zvecPtr);
+    writeGMatrixToFile(strcat(strcpy(fullpath, outputdir), "fevec.txt"), &fevecPtr);
+    writeGMatrixToFile(strcat(strcpy(fullpath, outputdir), "wprof.txt"), &wageprofilePtr);
+    
+    // fourth wave movement
+
+    GMatrix initAgesPtr, initYearsPtr, initTotAssetsPtr, initCapitalPtr, initDebtPtr, zShksPtr, feShksPtr, FTypesimsPtr;
+
+    initAgesPtr       = gau5read(strcat(strcpy(fullpath,rootdir),"initages.fmt")); 
+    initYearsPtr      = gau5read(strcat(strcpy(fullpath, rootdir),"inityrs.fmt"));
+    initTotAssetsPtr  = gau5read(strcat(strcpy(fullpath,rootdir),"initta.fmt"));
+    initCapitalPtr    = gau5read(strcat(strcpy(fullpath, rootdir), "initK.fmt"));
+    initDebtPtr       = gau5read(strcat(strcpy(fullpath,rootdir),"initdebt.fmt"));
+    zShksPtr          = gau5read(strcat(strcpy(fullpath,rootdir),"zshks.fmt")); 
+    FTypesimsPtr      = gau5read(strcat(strcpy(fullpath, rootdir), "ftype_sim.fmt"));
+
+    writeGMatrixToFile(strcat(strcpy(fullpath, outputdir), "initages.txt"), &initAgesPtr);
+    writeGMatrixToFile(strcat(strcpy(fullpath, outputdir), "inityrs.txt"), &initYearsPtr);
+    writeGMatrixToFile(strcat(strcpy(fullpath, outputdir), "initta.txt"), &initTotAssetsPtr);
+    writeGMatrixToFile(strcat(strcpy(fullpath, outputdir), "initK.txt"), &initCapitalPtr);
+    writeGMatrixToFile(strcat(strcpy(fullpath, outputdir), "initdebt.txt"), &initDebtPtr);
+    writeGMatrixToFile(strcat(strcpy(fullpath, outputdir), "zshks.txt"), &zShksPtr);
+    writeGMatrixToFile(strcat(strcpy(fullpath, outputdir), "ftype_sim.txt"), &FTypesimsPtr);
 
     return 0;
 }
