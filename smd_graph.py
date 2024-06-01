@@ -115,8 +115,8 @@ TFPaggshks, TFP_FE, TFPaggeffs, tkqntdat, DAqntdat, CAqntdat, nkqntdat, gikqntda
 			    											CAratio, ykratio, dumdwgts, avgage)
 
 # Make grid
-Nbeta = 10
-Nnu = 10
+Nbeta = 10      # Det endelige resultat skal være 10
+Nnu = 10        # 10
 beta_list = np.linspace(0.85,0.99,Nbeta)
 nu_list = np.linspace(2, 5, Nnu)
 
@@ -124,9 +124,9 @@ nu_list = np.linspace(2, 5, Nnu)
 obj = np.nan + np.zeros((Nbeta, Nnu))
 
 # Find objective function for each combination of beta and rho
-for i in beta_list:
-    for j in nu_list:
-        print(f'(i, j): ({i, j})')
+for idx,i in enumerate(beta_list):
+    for jdx,j in enumerate(nu_list):
+        print(f'(idx, jdx): ({idx, jdx})')
         # est_par = ['beta','nu']
         bta = logitrv(np.array([i])/betamax)
         nu = np.log(j)
@@ -142,11 +142,12 @@ for i in beta_list:
         numparms = parmvec.shape[0]
         fixvals = parmvec
         zerovec = 1
-        obj[i,j] = onerun_c(parmvec, fixvals, betamax, linprefs, nobeq, w_0, bigR, numFTypes, inadaU, nonshft, noDScost, nofcost,
+        obj[idx,jdx] = onerun_c(parmvec, fixvals, betamax, linprefs, nobeq, w_0, bigR, numFTypes, inadaU, nonshft, noDScost, nofcost,
 		  	nocolcnst, prnres, noReneg, finparms0, idioshks, randrows,
 		   rloutput, totcap, intgoods, obsmat,
 		   farmtype, av_cows, famsize, datawgts, chrttype, iobsmat,
 		   dvgobsmat, dividends, divgrowth, LTKratio, debtasst, nkratio,
 		   gikratio, CAratio, ykratio, dumdwgts, numsims, avgage)       # TODO: replace with onerun that calls C code
 
+np.savetxt("output/SMD_graph_test.txt", obj)
 

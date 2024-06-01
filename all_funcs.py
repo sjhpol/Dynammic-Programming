@@ -1802,7 +1802,7 @@ def onerun_c(parmvec, fixvals, betamax, linprefs, nobeq, w_0, bigR, numFTypes, i
 	### TODO: HERE THEY CALL THE C PROGRAM
 	## Add the python version of the C
 	# execret = exec(rulecall, "")  # Ensure `exec_rulecall` is defined
-	call([r'C:\Users\Simon\source\repos\babyfarm18b\x64\Debug\babyfarm18b.exe'])
+	call([r"C:\Users\zcl375\Dynammic-Programming\ccode\babyfarm18b\babyfarm18b.exe"])
 
 	## WE NEED TO WAIT UNTIL THIS IS DONE AS WE NEED FILES FROM THE C CODE
 	# Load simulations
