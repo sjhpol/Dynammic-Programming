@@ -890,6 +890,7 @@ def loadSims(fcost, gam, ag2, nshft, k_0, optNK, timespan, numsims, cashlag, tfp
 		np.mean(YKratioSim * alivesim2, axis=0) / aliveavg,
 		np.mean(NIKratioSim * ialivesim2, axis=0) / ialiveavg,
 		np.mean(GIKratioSim * ialivesim2, axis=0) / ialiveavg,
+		np.mean(divSim * divalivesim2, axis=0) / divaliveavg,
 		np.mean(exiterrs * simwgts.reshape(numsims, timespan), axis=0) / aliveavg
 	])
 
