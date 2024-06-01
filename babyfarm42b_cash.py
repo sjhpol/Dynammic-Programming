@@ -203,3 +203,8 @@ if comp_time:
 
 		total_df['frac alive'] = total_df['frac alive'] / std_alive_frac
 		total_df = total_df.sort_index(key=lambda x: order)
+
+		rel_cols = ['frac alive', 'Assets', 'Debt', 'Capital', 'Debt/Assets', 'Cash/Assets', 'Y/K', 'Gross Inv/K']
+
+		print(total_df.round(2).to_latex())
+

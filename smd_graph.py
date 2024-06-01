@@ -1,3 +1,5 @@
+import numpy as np
+
 from variables import *
 from functions import logitrv
 
@@ -113,41 +115,43 @@ TFPaggshks, TFP_FE, TFPaggeffs, tkqntdat, DAqntdat, CAqntdat, nkqntdat, gikqntda
 														   datawgts, chrttype, iobsmat, dvgobsmat,
 			  												dividends, divgrowth, LTKratio, debtasst, nkratio, gikratio,
 			    											CAratio, ykratio, dumdwgts, avgage)
+beta_nu = False
+chi_lambda = True
 
-# Make grid
-Nbeta = 10      # Det endelige resultat skal være 10
-Nnu = 10        # 10
-beta_list = np.linspace(0.85,0.99,Nbeta)
-nu_list = np.linspace(2, 5, Nnu)
+if beta_nu:
+	# Make grid
+	Nbeta = 10
+	Nnu = 10
+	beta_list = np.linspace(0.85,0.99,Nbeta)
+	nu_list = np.linspace(2, 5, Nnu)
 
-# Allocate
-obj = np.nan + np.zeros((Nbeta, Nnu))
+	# Allocate
+	obj = np.nan + np.zeros((Nbeta, Nnu))
 
-# Find objective function for each combination of beta and rho
-for idx,i in enumerate(beta_list):
-    for jdx,j in enumerate(nu_list):
-        print(f'(idx, jdx): ({idx, jdx})')
-        # est_par = ['beta','nu']
-        bta = logitrv(np.array([i])/betamax)
-        nu = np.log(j)
+	# Find objective function for each combination of beta and rho
+	for idx, i in enumerate(beta_list):
+		for jdx, j in enumerate(nu_list):
+			print(f'(i, j): ({i, j})')
+			# est_par = ['beta','nu']
+			bta = logitrv(np.array([i])/betamax)
+			nu = np.log(j)
 
-        parmvec = np.vstack(
-            [i, j, c_0, c_bar, finalMPC, chi0, cfloor, alp, gam0, nshft0, lam, phi, zta, fcost0, colcnst])
-        parmvec = parmvec[:, specnum]
+			parmvec = np.vstack(
+				[i, j, c_0, c_bar, finalMPC, chi0, cfloor, alp, gam0, nshft0, lam, phi, zta, fcost0, colcnst])
+			parmvec = parmvec[:, specnum]
 
-        prefparms, finparms, gam, ag2, nshft, fcost = makepvecs(parmvec, betamax, linprefs, nobeq, w_0, bigR, numFTypes,
-                                                                inadaU, nonshft, noDScost, nofcost, nocolcnst, prnres,
-                                                                noReneg, finparms0)
+			prefparms, finparms, gam, ag2, nshft, fcost = makepvecs(parmvec, betamax, linprefs, nobeq, w_0, bigR, numFTypes,
+																	inadaU, nonshft, noDScost, nofcost, nocolcnst, prnres,
+																	noReneg, finparms0)
 
-        numparms = parmvec.shape[0]
-        fixvals = parmvec
-        zerovec = 1
-        obj[idx,jdx] = onerun_c(parmvec, fixvals, betamax, linprefs, nobeq, w_0, bigR, numFTypes, inadaU, nonshft, noDScost, nofcost,
-		  	nocolcnst, prnres, noReneg, finparms0, idioshks, randrows,
-		   rloutput, totcap, intgoods, obsmat,
-		   farmtype, av_cows, famsize, datawgts, chrttype, iobsmat,
-		   dvgobsmat, dividends, divgrowth, LTKratio, debtasst, nkratio,
-		   gikratio, CAratio, ykratio, dumdwgts, numsims, avgage)       # TODO: replace with onerun that calls C code
+			numparms = parmvec.shape[0]
+			fixvals = parmvec
+			zerovec = 1
+			obj[idx,jdx] = onerun_c(parmvec, fixvals, betamax, linprefs, nobeq, w_0, bigR, numFTypes, inadaU, nonshft, noDScost, nofcost,
+				nocolcnst, prnres, noReneg, finparms0, idioshks, randrows,
+			   rloutput, totcap, intgoods, obsmat,
+			   farmtype, av_cows, famsize, datawgts, chrttype, iobsmat,
+			   dvgobsmat, dividends, divgrowth, LTKratio, debtasst, nkratio,
+			   gikratio, CAratio, ykratio, dumdwgts, numsims, avgage)       # TODO: replace with onerun that calls C code
 
-np.savetxt("output/SMD_graph_test.txt", obj)
 
