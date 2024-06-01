@@ -1,7 +1,11 @@
+import os
+import pandas as pd
+import json
+
 from variables import *
 from functions import logitrv
 
-from all_funcs import loaddat, initdist, datasetup, getgrids, makepvecs, onerun, graphs
+from all_funcs import loaddat, initdist, datasetup, getgrids, makepvecs, onerun, graphs, comp_stats
 
 graph_time = False
 comp_time = False
@@ -159,15 +163,43 @@ if graph_time:
 
 if comp_time:
 	beq = False
+	l_ = False
+	chi_ = False
 
 	# Change in bequest tax => change in babyfarm18b.py
 	if beq:
-		onerun(parmvec, fixvals, betamax, linprefs, nobeq, w_0, bigR, numFTypes, inadaU, nonshft, noDScost, nofcost,
-			   nocolcnst, prnres, noReneg, finparms0, idioshks, randrows,
-			   rloutput, totcap, intgoods, obsmat,
-			   farmtype, av_cows, famsize, datawgts, chrttype, iobsmat,
-			   dvgobsmat, dividends, divgrowth, LTKratio, debtasst, nkratio,
-			   gikratio, CAratio, ykratio, dumdwgts, numsims, avgage)
+		comp_stats('beq', fcost, gam, ag2, nshft, k_0, optNK, TFP_FE, randrows)
 
+	# Change in lambda: change above in lam variable
+	if l_:
+		comp_stats('lambda', fcost, gam, ag2, nshft, k_0, optNK, TFP_FE, randrows)
 
-	# Change in
+	# Change in chi: change above in chi variable
+	if chi_:
+		comp_stats('chi', fcost, gam, ag2, nshft, k_0, optNK, TFP_FE, randrows)
+
+	# Change in lambda: change above in lam variable
+	if l_ and chi_:
+		comp_stats('chi_lambda', fcost, gam, ag2, nshft, k_0, optNK, TFP_FE, randrows)
+
+	def load_comp():
+
+		order = ['std', 'lambda', 'chi', 'chi_lambda', 'beq']
+
+		total_df = pd.DataFrame()
+
+		for file in os.listdir('comp_stats'):
+			name, ext = os.path.splitext(file)
+
+			f = open(f'comp_stats/{file}')
+			data = json.load(f)
+			del f
+			temp_df = pd.DataFrame(data, index=[name])
+
+			total_df = pd.concat([total_df, temp_df])
+
+		std_df = total_df.loc['std', :]
+		std_alive_frac = std_df['frac alive']
+
+		total_df['frac alive'] = total_df['frac alive'] / std_alive_frac
+		total_df = total_df.sort_index(key=lambda x: order)

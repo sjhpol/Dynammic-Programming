@@ -10,6 +10,7 @@ from scipy.stats import norm
 
 import matplotlib.pyplot as plt
 
+from subprocess import call
 
 def getchrt(data, cohorts_j):
 	rn = len(data)
@@ -1738,6 +1739,144 @@ def onerun(parmvec, fixvals, betamax, linprefs, nobeq, w_0, bigR, numFTypes, ina
 	return criter
 
 
+
+def onerun_c(parmvec, fixvals, betamax, linprefs, nobeq, w_0, bigR, numFTypes, inadaU, nonshft, noDScost, nofcost,
+		  	nocolcnst, prnres, noReneg, finparms0, idioshks, randrows,
+		   rloutput, totcap, intgoods, obsmat,
+		   farmtype, av_cows, famsize, datawgts, chrttype, iobsmat,
+		   dvgobsmat, dividends, divgrowth, LTKratio, debtasst, nkratio,
+		   gikratio, CAratio, ykratio, dumdwgts, numsims, avgage):
+	# Initialize placeholders and variables
+	zero_vec = np.zeros_like(parmvec)
+	parm_trans = 1  # Assuming some transformation flag, replace if needed
+	dumswgts = np.ones((numsims, timespan))
+
+	all_parms = parmvec * zero_vec + fixvals * (1 - zero_vec)
+
+	if parm_trans == 1:
+		pref_parms, fin_parms, gam, ag2, nshft, fcost = makepvecs(all_parms, betamax, linprefs, nobeq, w_0, bigR, numFTypes, inadaU, nonshft, noDScost, nofcost,
+																  nocolcnst, prnres, noReneg, finparms0)
+	else:
+		pref_parms, fin_parms, gam, ag2, nshft, fcost = makepvecs2(all_parms, linprefs, w_0, bigR, inadaU, nonshft, noDScost, nofcost,
+			nocolcnst, prnres, noReneg, finparms0)
+
+	# Dataset preparation
+	dataset = datasetup(gam, ag2, nshft, fcost, rloutput, totcap, intgoods, obsmat,
+														   farmtype, av_cows, famsize, datawgts, chrttype, iobsmat,
+														   dvgobsmat, dividends, divgrowth, LTKratio, debtasst, nkratio,
+														   gikratio, CAratio, ykratio, dumdwgts, avgage)
+	(TFPaggshks, TFP_FE, TFPaggeffs, tkqntdat, DAqntdat, CAqntdat, nkqntdat,
+	 gikqntdat, ykqntdat, divqntdat, dvgqntdat, obsavgdat, tkqcnts, divqcnts, dvgqcnts,
+	 std_zi, zvec, fevec, k_0, optNK, optKdat, countadj, real_data_matrixes) = dataset
+
+	# Handle near-zero values in `dvgqntdat`
+	tinydvg = np.abs(dvgqntdat) < 0.1
+	dvgqntdat = dvgqntdat * (1 - tinydvg) + 0.1 * tinydvg * (2 * (dvgqntdat > 0) - 1)
+
+	# Handle missing data
+	missmomvec, obsmmtind = missingvec(tkqntdat, divqntdat, dvgqntdat, DAqntdat, CAqntdat,
+									   nkqntdat, gikqntdat, ykqntdat, obsavgdat, tkqcnts,
+									   divqcnts, dvgqcnts)
+	alldmoms = makemomvec(tkqntdat, divqntdat, dvgqntdat, DAqntdat, CAqntdat, nkqntdat,
+						  gikqntdat, ykqntdat, obsavgdat)
+
+	aggshks = np.hstack([0, TFPaggshks, 0])
+	zshks = aggshks.T + std_zi * idioshks
+	zshks = zshks.flatten()
+	feshks = TFP_FE[randrows]
+	k_0 = k_0[randrows]
+	optNK = optNK[randrows]
+
+	# Stupid hack!
+	job = np.array((1.0))
+
+	# Save intermediate results, replace `save_path` with actual save logic if needed
+	#np.savetxt(f'{iopath}job.txt', job)
+	np.savetxt(f'{iopath}prefparms.txt', pref_parms)
+	np.savetxt(f'{iopath}finparms.txt', fin_parms)
+	# np.savetxt(f'{iopath}zvec.txt', zvec)
+	# np.savetxt(f'{iopath}fevec.txt', fevec)
+	# np.savetxt(f'{iopath}zshks.txt', zshks)
+	# np.savetxt(f'{iopath}feshks.txt', feshks)
+
+	### TODO: HERE THEY CALL THE C PROGRAM
+	## Add the python version of the C
+	# execret = exec(rulecall, "")  # Ensure `exec_rulecall` is defined
+	call([r'C:\Users\Simon\source\repos\babyfarm18b\x64\Debug\babyfarm18b.exe'])
+
+	## WE NEED TO WAIT UNTIL THIS IS DONE AS WE NEED FILES FROM THE C CODE
+	# Load simulations
+	(ageSim, assetSim, cashSim, debtSim, divSim, dvgSim, eqinjSim, goteqiSim, equitySim, expenseSim, fracRPSim,
+	 intRateSim, liqDecSim, NKratioSim, outputSim, totKSim, ZvalSim, aliveSim, ialiveSim, dvgaliveSim,
+	 fwdalivesim, divaliveSim, DVKalivesim, cshaliveSim, CAaliveSim, exiterrs, deprSim, NInvSim,
+	 GInvSim, DAratioSim, CAratioSim, YKratioSim, NIKratioSim, GIKratioSim, DVKratioSim,
+	 DVKratioSim, profitSim, netWorthSim, avxerr, ftype_sim, simavg) =	loadSims(fcost, gam, ag2, nshft, k_0, optNK, timespan, numsims,
+																cashlag, tfplag, divlag, divbasemin, bigG,
+																gkE, dlt, rdgE, mvcode, feshks, prnres)
+
+	# Load files
+	cht_sim = np.loadtxt(f'{iopath}cht_sim.txt')
+	cht_sim = cht_sim.reshape(-1,1)
+
+	simwgts = np.loadtxt(f'{iopath}simwgts.txt')
+
+	if sizevar == 1:
+		fsSim = feshks
+	elif sizevar == 2:
+		fsSim = av_cows[randrows] / famsize[randrows]  # Ensure `av_cows` and `famsize` are defined
+
+	if GMMsort == 0:
+		profsort = 0
+	else:
+		profsort = ftype_sim
+
+	sim_profiles = simprofs(profsort, timespan, FSstate, checktie, fsSim, cht_sim, aliveSim,
+							ialiveSim, dvgaliveSim, divaliveSim, CAaliveSim, totKSim, divSim,
+							dvgSim, DAratioSim, NKratioSim, GIKratioSim, CAratioSim, YKratioSim,
+							simwgts, obsmat, dumswgts, prngrph, avgage)
+
+	(tkqntsim, DAqntsim, nkqntsim, gikqntsim, CAqntsim, ykqntsim, divqntsim, dvgqntSim, obsavgsim, sim_data_matrixes) = sim_profiles
+
+	allsmoms = makemomvec(tkqntsim, divqntsim, dvgqntSim, DAqntsim, CAqntsim, nkqntsim,
+						  gikqntsim, ykqntsim, obsavgsim)
+
+	wgtvec = makewgtvec(tkqntsim, divqntsim, dvgqntSim, DAqntsim, CAqntsim, nkqntsim,
+						gikqntsim, ykqntsim, obsavgsim, countadj)
+	datamoms = alldmoms[(1-missmomvec).astype(bool)]
+	simmoms = allsmoms[(1-missmomvec).astype(bool)]
+
+	wgtvec = wgtvec[(1-missmomvec).astype(bool)] / datamoms.reshape(-1,1)
+	rn = wgtvec.shape[0]
+	wgtmtx = np.eye(rn) * (wgtvec ** 2)
+
+	diff = datamoms - simmoms
+
+	criter = diff.T @ wgtmtx @ diff
+	# Let's just do all of them
+
+	# Save final results
+	# save_results(iopath, datamoms, simmoms, diff, criter, wgtmtx, alldmoms, allsmoms, missmomvec, obsmmtind)
+
+	lbl = ["Total Capital       ", "Dividends           ", "Debt/Assets         ",
+		   "Cash/Assets         ", "Int. Goods/Capital  ", "Gross Invst/Capital ",
+		   "Output/Capital      ", "Exit Errors         ", "Total               "]
+
+	if divmmts == 0:
+		lbl = [lbl[0]] + lbl[2:9]
+		obsmmtind = obsmmtind[[0] + list(range(2, 8)), :]
+
+	for iCrit in range(len(lbl) - 1):
+		subcrit = diff[obsmmtind[iCrit, 0]:obsmmtind[iCrit, 1]]
+		subwgt = wgtmtx[obsmmtind[iCrit, 0]:obsmmtind[iCrit, 1], obsmmtind[iCrit, 0]:obsmmtind[iCrit, 1]]
+		subcrit = subcrit.T @ subwgt @ subcrit
+		print(lbl[iCrit], subcrit)
+
+	print(lbl[-1], criter)
+
+	return criter
+
+
+
 def removeFE(datamat_j, obsmat_j):
 	# Calculate the sum of observations for each individual
 	obscounts = np.sum(obsmat_j, axis=1)
@@ -2807,7 +2946,7 @@ def graphs(gam, ag2, nshft, fcost, rloutput, totcap, intgoods, obsmat,
 	doplot(real_data_matrixes, sim_data_matrixes)
 
 
-def comp_beq(fcost, gam, ag2, nshft, k_0, optNK, TFP_FE, randrows):
+def comp_stats(name, fcost, gam, ag2, nshft, k_0, optNK, TFP_FE, randrows):
 
 	# Simulated data
 	feshks = TFP_FE[randrows]
@@ -2828,4 +2967,6 @@ def comp_beq(fcost, gam, ag2, nshft, k_0, optNK, TFP_FE, randrows):
 	df = pd.DataFrame(simavg).transpose()
 	df.columns = ['frac alive', 'TFP shks', 'Assets', 'Debt', 'Debt/Assets', 'Cash/Assets', 'Capital',
 				 'Igoods/K', 'Y/K', 'Net Inv/K', 'Gross Inv/K', 'exiterrs']
-	
+
+	df = df.mean(axis=0)
+	df.to_json(f'comp_stats/{name}.json')
