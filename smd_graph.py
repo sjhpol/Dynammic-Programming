@@ -137,7 +137,7 @@ if beta_nu:
 			nu = np.log(j)
 
 			parmvec = np.vstack(
-				[i, j, c_0, c_bar, finalMPC, chi0, cfloor, alp, gam0, nshft0, lam, phi, zta, fcost0, colcnst])
+				[bta, nu, c_0, c_bar, finalMPC, chi0, cfloor, alp, gam0, nshft0, lam, phi, zta, fcost0, colcnst])
 			parmvec = parmvec[:, specnum]
 
 			prefparms, finparms, gam, ag2, nshft, fcost = makepvecs(parmvec, betamax, linprefs, nobeq, w_0, bigR, numFTypes,
@@ -174,7 +174,7 @@ if chi_lambda:
 			lam = logitrv(np.array([j]))
 
 			parmvec = np.vstack(
-				[i, j, c_0, c_bar, finalMPC, chi0, cfloor, alp, gam0, nshft0, lam, phi, zta, fcost0, colcnst])
+				[bta, nu, c_0, c_bar, finalMPC, chi0, cfloor, alp, gam0, nshft0, lam, phi, zta, fcost0, colcnst])
 			parmvec = parmvec[:, specnum]
 
 			prefparms, finparms, gam, ag2, nshft, fcost = makepvecs(parmvec, betamax, linprefs, nobeq, w_0, bigR,

@@ -2947,7 +2947,7 @@ def graphs(gam, ag2, nshft, fcost, rloutput, totcap, intgoods, obsmat,
 	doplot(real_data_matrixes, sim_data_matrixes)
 
 
-def comp_stats(name, fcost, gam, ag2, nshft, k_0, optNK, TFP_FE, randrows):
+def comp_stats(name, fcost, gam, ag2, nshft, k_0, optNK, TFP_FE, randrows, numsims):
 
 	# Simulated data
 	feshks = TFP_FE[randrows]
@@ -2964,10 +2964,11 @@ def comp_stats(name, fcost, gam, ag2, nshft, k_0, optNK, TFP_FE, randrows):
 																		gkE, dlt, rdgE, mvcode, feshks, prnres)
 
 
-
 	df = pd.DataFrame(simavg).transpose()
 	df.columns = ['frac alive', 'TFP shks', 'Assets', 'Debt', 'Debt/Assets', 'Cash/Assets', 'Capital',
-				 'Igoods/K', 'Y/K', 'Net Inv/K', 'Gross Inv/K', 'exiterrs']
+				 'Igoods/K', 'Y/K', 'Net Inv/K', 'Gross Inv/K', 'Dividends', 'exiterrs']
+
+	df['Div Growth'] = (df.loc[10, 'Dividends'] / df.loc[0, 'Dividends'] - 1)/10
 
 	df = df.mean(axis=0)
 	df.to_json(f'comp_stats/{name}.json')
