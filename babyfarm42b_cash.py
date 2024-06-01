@@ -1,24 +1,19 @@
-import numpy as np
-import os
-from pathlib import Path
-
-from utility_functions import load_file # Functions that get called from several files have to be moved to a third file to avoid 'circular imports'
-from markch import markch
-import platform
-
 from variables import *
-from functions import logitrv, logit
+from functions import logitrv
 
-from all_funcs import loaddat, initdist, datasetup, getgrids, makepvecs, onerun, generate_all_summary_statistics
+from all_funcs import loaddat, initdist, datasetup, getgrids, makepvecs, onerun, graphs
+
+graph_time = False
+comp_time = False
 
 runnumber = ""
 
 print(f"iopath: {iopath}")
 
-#outfile = rootdir + "babyfarm42b_cash.txt"
-#output_file = open(outfile, "w")
-#output_file.write("\n    ")  # Write date and time
-#output_file.close()
+outfile = rootdir + "babyfarm42b_cash.txt"
+output_file = open(outfile, "w")
+output_file.write("\n    ")  # Write date and time
+output_file.close()
 
 srchshks = np.random.randn(100, 50)
 np.random.seed(12032013)
@@ -52,6 +47,9 @@ np.savetxt(f'{iopath}Kstate.txt', Kstate)
 np.savetxt(f'{iopath}lagKstate.txt', lagKstate)
 np.savetxt(f'{iopath}NKState.txt', NKState)
 np.savetxt(f'{iopath}Cstate.txt', Cstate)
+
+	# Order = (1) baseline; (2) chi = 0; (3) psi = 0; (4) nu = 0; (5) nu = 0.25; (6) lam = 0.175; (7) chi=0 + lam=0.175; (8) w = 30;
+# (9) no renegotiation; (10) herd-size weighted; (11) herd-size weighted, mean capital target
 
 # Baseline parameters
 bta = logitrv(np.array([0.972874, 0.999723, 1.000921, 0.967146, 0.972585, 0.972849, 1.000325, 0.972860, 0.980321, 1.0084573, 0.973077])/betamax)
@@ -95,9 +93,6 @@ if numFTypes == 1:
 	alp[1, :] = alp[0, :]
 	gam0[1, :] = gam0[0, :]
 
-print("Summary statistics (unconditional):")
-generate_all_summary_statistics()
-
 # Assign values from parmvec and settvec
 parmvec = np.vstack([bta, nu, c_0, c_bar, finalMPC, chi0, cfloor, alp, gam0, nshft0, lam, phi, zta, fcost0, colcnst])
 settvec = np.vstack([w_0, nocolcnst, noReneg])
@@ -138,9 +133,6 @@ TFPaggshks, TFP_FE, TFPaggeffs, tkqntdat, DAqntdat, CAqntdat, nkqntdat, gikqntda
 			  												dividends, divgrowth, LTKratio, debtasst, nkratio, gikratio,
 			    											CAratio, ykratio, dumdwgts, avgage)
 
-
-
-
 # datadscr her. Den laver graphs! (og sorterer med TFP, men det kan vi tage senere).
 # (data describe)
 
@@ -157,47 +149,25 @@ onerun(parmvec, fixvals, betamax, linprefs, nobeq, w_0, bigR, numFTypes, inadaU,
 		   dvgobsmat, dividends, divgrowth, LTKratio, debtasst, nkratio,
 		   gikratio, CAratio, ykratio, dumdwgts, numsims, avgage)
 
-# Run the model, if necessary. 
+if graph_time:
 
-prnres    = 1
-prngrph   = 0
-prnum     = 1     # Parameters for Honore and Kyriazidou's Simplex search algorithm @
-maxsec    = 3600*24*20
-ftol      = 0.00005
-maxiter   = 1500
-feval     = 0
+	graphs(gam, ag2, nshft, fcost, rloutput, totcap, intgoods, obsmat,
+			   farmtype, av_cows, famsize, datawgts, chrttype, iobsmat,
+			   dvgobsmat, dividends, divgrowth, LTKratio, debtasst, nkratio,
+			   gikratio, CAratio, ykratio, dumdwgts, avgage, k_0, optNK, TFP_FE,
+			   randrows, dumswgts, numsims)
 
-# STUFF FOR STANDARD ERRORS. KIND OF A STRECH GOAL NGL
-_="""
-numparms = parmvec.size
-zerovec = np.ones((numparms, 1))
+if comp_time:
+	beq = False
 
-# Set specific elements in zerovec based on conditions
-zerovec[2] = (1 - linprefs) * (1 - (specnum == 4)) * (1 - (specnum == 5))
-zerovec[3] = 1 - inadaU
-zerovec[4:6] = np.ones((2, 1)) * (1 - nobeq) * (1 - (specnum == 4))
-zerovec[6] = (1 - (specnum == 2)) * (1 - (specnum == 7))  # Assuming NP Benefit is a placeholder
+	# Change in bequest tax => change in babyfarm18b.py
+	if beq:
+		onerun(parmvec, fixvals, betamax, linprefs, nobeq, w_0, bigR, numFTypes, inadaU, nonshft, noDScost, nofcost,
+			   nocolcnst, prnres, noReneg, finparms0, idioshks, randrows,
+			   rloutput, totcap, intgoods, obsmat,
+			   farmtype, av_cows, famsize, datawgts, chrttype, iobsmat,
+			   dvgobsmat, dividends, divgrowth, LTKratio, debtasst, nkratio,
+			   gikratio, CAratio, ykratio, dumdwgts, numsims, avgage)
 
-# Set zerovec[7] to 0 (assuming Consumption floor is a comment)
-zerovec[7] = 0
 
-# Handle elements 9 and 11 based on numFTypes
-if numparms >= 12:
-	zerovec[9:11] = ((np.ones((2, 1)) * (numFTypes - 1)) > 0.999)
-else:
-	raise ValueError("zerovec must have at least 12 elements")
-
-# Set the last five elements
-zerovec[numparms - 5] = 1 - nonshft
-zerovec[numparms - 4] = 1 - fixlam
-zerovec[numparms - 3] = 1 - noDScost
-zerovec[numparms - 1] = 1 - nofcost
-zerovec[numparms] = 1 - nocolcnst
-
-# Keep only elements where zerovec is not close to 1 (assuming tolerance of 0.99)
-colkeep = np.arange(1, numparms + 1)
-colkeep = colkeep * zerovec
-colkeep = np.sort(colkeep)
-zn = np.sum(colkeep < 0.99)
-colkeep = colkeep[zn + 1:]
-"""
+	# Change in

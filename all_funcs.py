@@ -417,7 +417,6 @@ def getgrids(Arange, Afine, grdcoef_lv, grdcoef_rt, Enum0, TAnum0,
 	Cfill = setindx1(Cnum,C_min,C_max,grdcoef_lv)[1:]
 	Cstate = np.concatenate((Cstate, Cfill))
 	C_min = Cstate[0]
-	#C_min = 0
 	Cnum = len(Cstate)
 	Cindvec = np.arange(1, Cnum + 1)
 
@@ -534,6 +533,7 @@ def makepvecs2(parmvec, linprefs, w_0, bigR, inadaU, nonshft, noDScost, nofcost,
 				 noReneg, w_0)
 
 	return prefparms, finparms, gam, ag2, nshft, fcost
+
 
 
 def prnparms(nu, c_0, bta, cfloor, finalMPC, bigR, thetaB, c_1, chi, alp, gam, nshft, lam, phi, zta, dlt, fcost,
@@ -761,15 +761,13 @@ def makemomvec(tkqnt, divqnt, dvgqnt, DAqnt, CAqnt, nkqnt, gikqnt, ykqnt, obsavg
 
 def loadSims(fcost, gam, ag2, nshft, k_0, optNK, timespan, numsims, cashlag, tfplag, divlag, divbasemin, bigG,
 			 gkE, dlt, rdgE, mvcode, feshks, prnres):
-	def reshape(array, rows, cols):
-		return array.reshape(rows, cols).T
 
 	# Load data
 	ageS = np.loadtxt(f'{iopath}ageS.txt', ndmin=2)
 	assetsS = np.loadtxt(f'{iopath}assetsS.txt', ndmin=2)
 	cashS = np.loadtxt(f'{iopath}cashS.txt', ndmin=2)
 	debtS = np.loadtxt(f'{iopath}debtS.txt', ndmin=2)
-	divsS = np.loadtxt(f'{iopath}divsS.txt', ndmin=2)
+	divS = np.loadtxt(f'{iopath}divsS.txt', ndmin=2)
 	equityS = np.loadtxt(f'{iopath}equityS.txt', ndmin=2)
 	expenseS = np.loadtxt(f'{iopath}expenseS.txt', ndmin=2)
 	fracRPS = np.loadtxt(f'{iopath}fracRPS.txt', ndmin=2)
@@ -790,7 +788,7 @@ def loadSims(fcost, gam, ag2, nshft, k_0, optNK, timespan, numsims, cashlag, tfp
 	assetsS = assetsS.reshape(timespan + 1, numsims).transpose()
 	cashS = cashS.reshape(timespan + 1, numsims).transpose()
 	debtS = debtS.reshape(timespan + 1, numsims).transpose()
-	divsS = divsS.reshape(timespan + 1, numsims).transpose()
+	divS = divS.reshape(timespan + 1, numsims).transpose()
 	equityS = equityS.reshape(timespan + 1, numsims).transpose()
 	expenseS = expenseS.reshape(timespan + 1, numsims).transpose()
 	fracRPS = fracRPS.reshape(timespan + 1, numsims).transpose()
@@ -814,7 +812,7 @@ def loadSims(fcost, gam, ag2, nshft, k_0, optNK, timespan, numsims, cashlag, tfp
 	hetgam = gam[ftype_sim.reshape(-1, ).astype(int) - 1]
 	alp = 1 - hetag2 - hetgam
 	optKSim = (k_0.reshape(-1,1) * np.exp(FEshks)) ** (1 / alp.reshape(-1,1))
-	divSim = divsS[:, divlag:timespan + divlag]
+	divSim = divS[:, divlag:timespan + divlag]
 	fixeddiv = (np.abs(divSim[:, :timespan - 1]) > divbasemin)
 	divsign = 1 - 2 * (divSim[:, :timespan - 1] < 0)
 	fixeddiv = divSim[:, :timespan - 1] * fixeddiv + divbasemin * (1 - fixeddiv) * divsign
@@ -883,6 +881,7 @@ def loadSims(fcost, gam, ag2, nshft, k_0, optNK, timespan, numsims, cashlag, tfp
 		aliveavg,
 		np.mean(ZvalSim * alivesim2, axis=0) / aliveavg,
 		np.mean(assetSim * alivesim2, axis=0) / aliveavg,
+		np.mean(debtSim * alivesim2, axis=0) / aliveavg,
 		np.mean(DAratioSim * alivesim2, axis=0) / aliveavg,
 		np.mean(CAratioSim * CAalivesim2, axis=0) / CAaliveavg,
 		np.mean(totKSim * alivesim2, axis=0) / aliveavg,
@@ -894,7 +893,7 @@ def loadSims(fcost, gam, ag2, nshft, k_0, optNK, timespan, numsims, cashlag, tfp
 	])
 
 	if prnres > 0:
-		print("      Year    frac alive   TFP shks     Assets   Debt/Assets  Cash/Assets    Capital    igoods/K")
+		print("      Year    frac alive   TFP shks     Assets	Debt   Debt/Assets  Cash/Assets    Capital    igoods/K")
 		print("       Y/K    Net Inv/K   Gross I/K   exiterrs")
 
 		for t in range(timespan):
@@ -908,18 +907,18 @@ def loadSims(fcost, gam, ag2, nshft, k_0, optNK, timespan, numsims, cashlag, tfp
 	# Calculate avxerr
 	avxerr = np.dot(aliveavg, (np.mean(exiterrs, axis=0) / aliveavg)) / np.sum(aliveavg)
 
-	# Calculate saa
-	saa_part1 = aliveavg @ aliveavg / np.sum(aliveavg)
-	saa_part2 = CAaliveavg @ simavg[:, 3] / np.sum(CAaliveavg)
-	saa_part3 = np.dot(aliveavg, simavg[:, 4:8]) / np.sum(aliveavg)
-	saa_part4 = np.dot(ialiveavg, simavg[:, 8:10]) / np.sum(ialiveavg)
-	saa_part5 = np.dot(aliveavg, simavg[:, 10]) / np.sum(aliveavg)
-
-	# Concatenate all parts to form saa
-	saa = np.hstack([saa_part1, saa_part2, saa_part3, saa_part4, saa_part5])
-
-	# Print all years
-	print("All years:", saa)
+	# # Calculate saa
+	# saa_part1 = aliveavg @ aliveavg / np.sum(aliveavg)
+	# saa_part2 = CAaliveavg @ simavg[:, 3] / np.sum(CAaliveavg)
+	# saa_part3 = np.dot(aliveavg, simavg[:, 4:8]) / np.sum(aliveavg)
+	# saa_part4 = np.dot(ialiveavg, simavg[:, 8:10]) / np.sum(ialiveavg)
+	# saa_part5 = np.dot(aliveavg, simavg[:, 10]) / np.sum(aliveavg)
+	#
+	# # Concatenate all parts to form saa
+	# saa = np.hstack([saa_part1, saa_part2, saa_part3, saa_part4, saa_part5])
+	#
+	# # Print all years
+	# print("All years:", saa)
 
 	# Print unique optimal intermediate Goods/Capital ratio
 	optimal_ratio = np.unique(optNK, axis=0)
@@ -931,39 +930,40 @@ def loadSims(fcost, gam, ag2, nshft, k_0, optNK, timespan, numsims, cashlag, tfp
 			return np.mean(arr, axis=0)
 
 		# Calculate simavg
-		simavg = meanc(assetSim * alivesim2) / aliveavg
-		simavg = np.column_stack([
-			simavg,
-			meanc(debtSim * alivesim2) / aliveavg,
-			meanc(outputSim * alivesim2) / aliveavg,
-			meanc(totKSim * alivesim2) / aliveavg,
-			meanc(expenseSim * alivesim2) / aliveavg
-		])
-
-		# Calculate gam_avg and ag2_avg
-		gam_avg = meanc(hetgam.reshape(-1,1) * alivesim2) / aliveavg
-		ag2_avg = meanc(hetag2.reshape(-1,1) * alivesim2) / aliveavg
-
-		# Calculate aggTFP
-		aggTFP = simavg[:, 2] / ((simavg[:, 3] ** gam_avg) * ((simavg[:, 4] - fcost + nshft) ** ag2_avg))
-
-		# Update simavg
-		simavg = np.column_stack([aliveavg.reshape(-1, 1), aggTFP.reshape(-1, 1), simavg])
-		simavg = np.column_stack([
-			simavg,
-			meanc(profitSim * alivesim2) / aliveavg,
-			meanc(cashSim * cshalivesim2) / cshaliveavg,
-			meanc(divSim * divalivesim2) / divaliveavg,
-			meanc(GInvSim * ialivesim2) / ialiveavg,
-			meanc(intRateSim * alivesim2) / aliveavg,
-			meanc(optKSim * alivesim2) / aliveavg
-		])
-
-		# Print yearly statistics
-		print("Year frac alive Agg TFP Assets Debt Output Capital")
-		print("Expenses Profits Cash Dividends Gr. Inv. Int rate optCap")
-		seqa = np.arange(firstyr, firstyr + timespan).reshape(-1, 1)
-		simavg = np.column_stack([seqa, simavg])
+		# simavg = meanc(assetSim * alivesim2) / aliveavg
+		# simavg = np.column_stack([
+		# 	simavg,
+		# 	meanc(debtSim * alivesim2) / aliveavg,
+		# 	meanc(outputSim * alivesim2) / aliveavg,
+		# 	meanc(totKSim * alivesim2) / aliveavg,
+		# 	meanc(expenseSim * alivesim2) / aliveavg
+		# ])
+		#
+		# # Calculate gam_avg and ag2_avg
+		# gam_avg = meanc(hetgam.reshape(-1,1) * alivesim2) / aliveavg
+		# ag2_avg = meanc(hetag2.reshape(-1,1) * alivesim2) / aliveavg
+		#
+		# # Calculate aggTFP
+		# aggTFP = simavg[:, 2] / ((simavg[:, 3] ** gam_avg) * ((simavg[:, 4] - fcost + nshft) ** ag2_avg))
+		#
+		# # Update simavg
+		# simavg = np.column_stack([aliveavg.reshape(-1, 1), aggTFP.reshape(-1, 1), simavg])
+		# simavg = np.column_stack([
+		# 	simavg,
+		# 	meanc(profitSim * alivesim2) / aliveavg,
+		# 	meanc(cashSim * cshalivesim2) / cshaliveavg,
+		# 	meanc(divSim * divalivesim2) / divaliveavg,
+		# 	meanc(GInvSim * ialivesim2) / ialiveavg,
+		# 	meanc(intRateSim * alivesim2) / aliveavg,
+		# 	meanc(optKSim * alivesim2) / aliveavg
+		# ])
+		#
+		# # Print yearly statistics
+		# print("Year frac alive Agg TFP Assets Debt Output Capital")
+		# print("Expenses Profits Cash Dividends Gr. Inv. Int rate optCap")
+		# seqa = np.arange(firstyr, firstyr + timespan).reshape(-1, 1)
+		# simavg = np.column_stack([seqa, simavg])
+		# print(simavg)
 
 		# # Calculate saa
 		# saa = np.column_stack([
@@ -978,42 +978,42 @@ def loadSims(fcost, gam, ag2, nshft, k_0, optNK, timespan, numsims, cashlag, tfp
 		# print("All years", saa)
 
 		# Prepare simdata0
-		simdata0 = np.column_stack([
-			np.arange(1, numsims + 1).reshape(-1, 1),
-			IDsim,
-			FEshks,
-			ftype_sim
-		])
-
-		# Initialize mvc1 and imvc1
-		mvc1 = -999 * (1 - aliveSim)
-		imvc1 = -999 * (1 - ialiveSim)
-
-		# Prepare simdata
-		simdata = np.vstack([
-			np.column_stack([np.ones((numsims, 1)), simdata0, (totKSim * aliveSim + mvc1)]),
-			np.column_stack([2 * np.ones((numsims, 1)), simdata0, ((expenseSim - fcost) * aliveSim + mvc1)]),
-			np.column_stack([3 * np.ones((numsims, 1)), simdata0, (outputSim * aliveSim + mvc1)]),
-			np.column_stack(
-				[4 * np.ones((numsims, 1)), simdata0, (np.exp(FEshks) * ZvalSim * aliveSim + mvc1)]),
-			np.column_stack([5 * np.ones((numsims, 1)), simdata0, (assetSim * aliveSim + mvc1)]),
-			np.column_stack([6 * np.ones((numsims, 1)), simdata0, (debtSim * aliveSim + mvc1)]),
-			np.column_stack([7 * np.ones((numsims, 1)), simdata0, (GInvSim * ialiveSim + imvc1)]),
-			np.column_stack([8 * np.ones((numsims, 1)), simdata0, (NInvSim * ialiveSim + imvc1)]),
-			np.column_stack([9 * np.ones((numsims, 1)), simdata0, (ageSim * aliveSim + mvc1)])
-		])
-
-		# getcorrs(totKSim, YKratioSim, NKratioSim, GIKratioSim, DAratioSim, CAratioSim,
-		# 		 DVKratioSim, dvgSim, eqinjSim, DVFEratioSim, aliveSim, ialiveSim, aliveSim,
-		# 		 DVKalivesim, dvgaliveSim, divaliveSim, simwgts)
-
-		np.savetxt('iofiles/simdata.txt', simdata)
+		# simdata0 = np.column_stack([
+		# 	np.arange(1, numsims + 1).reshape(-1, 1),
+		# 	IDsim,
+		# 	FEshks,
+		# 	ftype_sim
+		# ])
+		#
+		# # Initialize mvc1 and imvc1
+		# mvc1 = -999 * (1 - aliveSim)
+		# imvc1 = -999 * (1 - ialiveSim)
+		#
+		# # Prepare simdata
+		# simdata = np.vstack([
+		# 	np.column_stack([np.ones((numsims, 1)), simdata0, (totKSim * aliveSim + mvc1)]),
+		# 	np.column_stack([2 * np.ones((numsims, 1)), simdata0, ((expenseSim - fcost) * aliveSim + mvc1)]),
+		# 	np.column_stack([3 * np.ones((numsims, 1)), simdata0, (outputSim * aliveSim + mvc1)]),
+		# 	np.column_stack(
+		# 		[4 * np.ones((numsims, 1)), simdata0, (np.exp(FEshks) * ZvalSim * aliveSim + mvc1)]),
+		# 	np.column_stack([5 * np.ones((numsims, 1)), simdata0, (assetSim * aliveSim + mvc1)]),
+		# 	np.column_stack([6 * np.ones((numsims, 1)), simdata0, (debtSim * aliveSim + mvc1)]),
+		# 	np.column_stack([7 * np.ones((numsims, 1)), simdata0, (GInvSim * ialiveSim + imvc1)]),
+		# 	np.column_stack([8 * np.ones((numsims, 1)), simdata0, (NInvSim * ialiveSim + imvc1)]),
+		# 	np.column_stack([9 * np.ones((numsims, 1)), simdata0, (ageSim * aliveSim + mvc1)])
+		# ])
+		#
+		# # getcorrs(totKSim, YKratioSim, NKratioSim, GIKratioSim, DAratioSim, CAratioSim,
+		# # 		 DVKratioSim, dvgSim, eqinjSim, DVFEratioSim, aliveSim, ialiveSim, aliveSim,
+		# # 		 DVKalivesim, dvgaliveSim, divaliveSim, simwgts)
+		#
+		# np.savetxt('iofiles/simdata.txt', simdata)
 
 	return (ageSim, assetSim, cashSim, debtSim, divSim, dvgSim, eqinjSim, goteqiSim, equitySim, expenseSim, fracRPSim,
 			intRateSim, liqDecSim, NKratioSim, outputSim, totKSim, ZvalSim, aliveSim, ialiveSim, dvgaliveSim,
 			fwdalivesim, divaliveSim, DVKalivesim, cshaliveSim, CAaliveSim, exiterrs, deprSim, NInvSim,
 			GInvSim, DAratioSim, CAratioSim, YKratioSim, NIKratioSim, GIKratioSim, DVKratioSim,
-			DVKratioSim, profitSim, netWorthSim, avxerr, ftype_sim)
+			DVKratioSim, profitSim, netWorthSim, avxerr, ftype_sim, simavg)
 
 
 def grphmtx(dataprfs, vartype, datatype, quants_j, FSnum_j, chrtnum_j, numyrs_j, sorttype, avgage):
@@ -1154,7 +1154,7 @@ def grphmtx(dataprfs, vartype, datatype, quants_j, FSnum_j, chrtnum_j, numyrs_j,
 		# Final ageseq is all years alive where there's not missing data. #
 		ageseq3 = gmat[:,0].astype(int)  # Use gotsome.flatten() for indexing
 
-        # Interpolation for missing values within columns
+		# Interpolation for missing values within columns
 		for col in range(1, gmat.shape[1]):
 			gmat[:,cn] = fill_missing_values(gmat[:,cn],ageseq3-1)		#     @- missing values -@
 
@@ -1537,12 +1537,14 @@ def doplot(real_dict, sim_dict):
 			plt.plot(real_series[:, 0], real_y, label=f"Real - Series {i}", color=color_scheme[i-2])
 			plt.plot(sim_series[:, 0], sim_y, label=f"Simulated - Series {i}", color=color_scheme[i-2], linestyle=sim_line_style)
 
+		print(f"Median {graph_title}: Data (Solid) vs. Model (Dashed)")
+		print(real_series)
+		print(sim_series)
 		plt.xlabel("Age of operator")
 		plt.ylabel(f"{y_axis}")
 		plt.title(f"Median {graph_title}: Data (Solid) vs. Model (Dashed)")
 		#plt.legend()
 		plt.grid(True)
-
 		#plt.show()
 		plt.savefig(f'{outputpath}{graph_title}.png', dpi=400)
 
@@ -1642,29 +1644,27 @@ def onerun(parmvec, fixvals, betamax, linprefs, nobeq, w_0, bigR, numFTypes, ina
 						  gikqntdat, ykqntdat, obsavgdat)
 
 	aggshks = np.hstack([0, TFPaggshks, 0])
-	zshks = aggshks.T + std_zi * idioshks  # Ensure `idioshks` is defined
+	zshks = aggshks.T + std_zi * idioshks
 	zshks = zshks.flatten()
-	feshks = TFP_FE[randrows]  # Ensure `randrows` is defined
-	k_0 = k_0[randrows]  # Ensure `randrows` is defined
-	optNK = optNK[randrows]  # Ensure `randrows` is defined
+	feshks = TFP_FE[randrows]
+	k_0 = k_0[randrows]
+	optNK = optNK[randrows]
 
 	# Stupid hack!
-	job = np.array([1.0])
+	job = np.array((1.0))
 
 	# Save intermediate results, replace `save_path` with actual save logic if needed
-	np.savetxt(f'{iopath}job.txt', job)
+	#np.savetxt(f'{iopath}job.txt', job)
 	np.savetxt(f'{iopath}prefparms.txt', pref_parms)
 	np.savetxt(f'{iopath}finparms.txt', fin_parms)
-	np.savetxt(f'{iopath}zvec.txt', zvec)
-	np.savetxt(f'{iopath}fevec.txt', fevec)
-	np.savetxt(f'{iopath}zshks.txt', zshks)
-	np.savetxt(f'{iopath}feshks.txt', feshks)
+	# np.savetxt(f'{iopath}zvec.txt', zvec)
+	# np.savetxt(f'{iopath}fevec.txt', fevec)
+	# np.savetxt(f'{iopath}zshks.txt', zshks)
+	# np.savetxt(f'{iopath}feshks.txt', feshks)
 
 	### TODO: HERE THEY CALL THE C PROGRAM
 	## Add the python version of the C
 	# execret = exec(rulecall, "")  # Ensure `exec_rulecall` is defined
-
-	print("")
 
 	## WE NEED TO WAIT UNTIL THIS IS DONE AS WE NEED FILES FROM THE C CODE
 	# Load simulations
@@ -1672,7 +1672,7 @@ def onerun(parmvec, fixvals, betamax, linprefs, nobeq, w_0, bigR, numFTypes, ina
 	 intRateSim, liqDecSim, NKratioSim, outputSim, totKSim, ZvalSim, aliveSim, ialiveSim, dvgaliveSim,
 	 fwdalivesim, divaliveSim, DVKalivesim, cshaliveSim, CAaliveSim, exiterrs, deprSim, NInvSim,
 	 GInvSim, DAratioSim, CAratioSim, YKratioSim, NIKratioSim, GIKratioSim, DVKratioSim,
-	 DVKratioSim, profitSim, netWorthSim, avxerr, ftype_sim) =	loadSims(fcost, gam, ag2, nshft, k_0, optNK, timespan, numsims,
+	 DVKratioSim, profitSim, netWorthSim, avxerr, ftype_sim, simavg) =	loadSims(fcost, gam, ag2, nshft, k_0, optNK, timespan, numsims,
 																cashlag, tfplag, divlag, divbasemin, bigG,
 																gkE, dlt, rdgE, mvcode, feshks, prnres)
 
@@ -1715,7 +1715,6 @@ def onerun(parmvec, fixvals, betamax, linprefs, nobeq, w_0, bigR, numFTypes, ina
 
 	criter = diff.T @ wgtmtx @ diff
 	# Let's just do all of them
-	doplot(real_data_matrixes, sim_data_matrixes)
 
 	# Save final results
 	# save_results(iopath, datamoms, simmoms, diff, criter, wgtmtx, alldmoms, allsmoms, missmomvec, obsmmtind)
@@ -2221,9 +2220,9 @@ def initdist(IDs, farmtype, initstate, obsmat, iobsmat, dvgobsmat, isimage, coho
 	initTA = initstate[randrows, 4]
 	initK = initstate[randrows, 5]
 	initdebt = initstate[randrows, 6]
-	obssim = obsmat[randrows, :]
-	iobssim = iobsmat[randrows, :]
-	dvgobssim = dvgobsmat[randrows, :]
+	obsSim = obsmat[randrows, :]
+	iobsSim = iobsmat[randrows, :]
+	dvgobsSim = dvgobsmat[randrows, :]
 	simwgts = datawgts[randrows, :]
 
 	chrtcnts, cht_sim = getchrt(a01_sim, cohorts)
@@ -2237,9 +2236,9 @@ def initdist(IDs, farmtype, initstate, obsmat, iobsmat, dvgobsmat, isimage, coho
 	np.savetxt(f'{iopath}initK.txt', initK)
 	np.savetxt(f'{iopath}initdebt.txt', initdebt)
 	np.savetxt(f'{iopath}IDsim.txt', IDsim)
-	np.savetxt(f'{iopath}obsSim.txt', obssim)
-	np.savetxt(f'{iopath}iobsSim.txt', iobssim)
-	np.savetxt(f'{iopath}dvgobsSim.txt', dvgobssim)
+	np.savetxt(f'{iopath}obsSim.txt', obsSim)
+	np.savetxt(f'{iopath}iobsSim.txt', iobsSim)
+	np.savetxt(f'{iopath}dvgobsSim.txt', dvgobsSim)
 	np.savetxt(f'{iopath}cht_sim.txt', cht_sim)
 	np.savetxt(f'{iopath}ftype_sim.txt', ftype_sim)
 	np.savetxt(f'{iopath}simwgts.txt', simwgts)
@@ -2253,7 +2252,6 @@ def FEReg(YvarMtx, obsmat_y, XvarMtx, timeseq, statacrap):
 	"""
 	Fixed effect regression with time dummies
 		 Assumes explanatory variables are stacked vertically
-		 Stata does not estimate simple FE.  Statacrap based on xtreg manual.
 	"""
 	nfarms = len(YvarMtx)
 	gotobs = np.sum(obsmat_y, axis=1) > 0
@@ -2387,8 +2385,8 @@ def getTFP(rloutput, totcap, intgoods, obsmat, gam, ag2, nshft, fcost, statacrap
 
 	# Extract standard deviations
 	std_ts = sstat_ag[4]
-	std_mu = sstat_eps[4]
-	std_eps = sstat_FE[4]
+	std_mu = sstat_FE[4]
+	std_eps = sstat_eps[4]
 
 	if prnres == 2:
 		print("TFP Aggregate Values")
@@ -2539,7 +2537,6 @@ def dataprofs(FType, farmsize, FSstate, timespan, datawgts, checktie, chrttype, 
 	
 	_="""for key, _ in real_data_matrixes.iteritems() :
     	print(key, value)"""
-
 	
 	return tkqntdat, DAqntdat, CAqntdat, nkqntdat, gikqntdat, ykqntdat, divqntdat, dvgqntdat, obsavgdat, tkqcnts, divqcnts, dvgqcnts, countadj, real_data_matrixes
 
@@ -2636,72 +2633,199 @@ def generate_all_summary_statistics():
 			netinv, nikratio, iobsmat, age_2001, init_yr, init_age, av_cows, famsize, cohorts,
 			chrttype, milktype, herdtype, farmtype, avgage, datawgts, initstate) = loaddat(timespan, np.array([1, 0]), 1, chrtnum, chrtstep, sizescreen, wgtddata) # du skal ikke spørge hvorfor
 
-	output_str = """"""
-
 	# LATEX table header
-	output_str += "\\begin{tabular}{lccccc}\n"
+	# print("\\begin{tabular}{lccccc}")
+	# print("\\headrow{Variable & Mean & Median & Std. Dev. & Max & Min} \\\\")
 
-	output_str += "\\toprule\n"
-	output_str += "\\textbf{Variable} & \\textbf{Mean} & \\textbf{Median} & \\textbf{Std. Dev.} & \\textbf{Max} & \\textbf{Min} \\ \n"
-	output_str += "\\midrule\n"
-	#output_str += "\\headrow{Variable & Mean & Median & Std. Dev. & Max & Min} \\\\ \n"
+	total_exp = intgoods
 
-	# TODO: Implement periode-kode, som angiver, hvilken periode det er i. 
-	# Nemmere løsning: Vi opdeler dem på (år,værdi), og så snitter vi over værdi betinget på år (=0)
+	summary_statistic_dictionary = {"No. of operators": famsize,
+									"youngest operator age": init_age,
+									"Herd Size (Cows)": av_cows,
+									"Total Capital": totcap,
+									"Owned Capital": owncap,
+									"Owned/Total capital": owncap / totcap,
+									"Revenues": rloutput,
+									"Total Expenses": total_exp,
+									# "\tLeasing and interest": lsdex,
+									"Total Assets": totasst,
+									"Cash": cash,
+									"Total Liabilities": totliab,
+									"Net Worth": equity,
+									"Dividends": dividends}
 
-	summary_statistic_dictionary = {
-								"Family size": famsize,
-								"Youngest operator age": init_age,
-								"Average cows per farm": av_cows,
-								"Average age": avgage,
-								"Total capital": totcap,
-								"Owned capital": owncap,
-								"Leased / owned capital": LTKratio,
-								"Revenue": cashflow,
-								"Divident growth": divgrowth,
-								"--Variable input": intgoods,
-								"Totals assets": totasst,
-								"--Cash": cash,
-								"Total liabilities": totliab,
-								"Dividends": dividends}
+	total_df = pd.DataFrame()
+	year = 11
 
 	# Loop through the dictionary and calculate statistics
 	for key, element in summary_statistic_dictionary.items():
+		if element.shape[-1] == 11:
+			element = element[:, year-1]
 		summary_statistic = return_individual_sum_stats(element)
+		temp_df = pd.DataFrame(summary_statistic,index=['Mean', 'Median', 'Standard Deviation', 'Minimum', 'Maximum'],
+							   columns=[key])
+
+		total_df = pd.concat([total_df, temp_df], axis=1)
 		# Format statistics for LATEX output
-		output_str += f"{key} \t\t& {summary_statistic[0]:.2f} & {summary_statistic[1]:.2f} & {summary_statistic[2]:.2f} & {summary_statistic[3]:.0f} & {summary_statistic[4]:.0f} \\\\ \n"
+		# print(f"{key} \t\t& {summary_statistic[0]:.2f} & {summary_statistic[1]:.2f} & {summary_statistic[2]:.2f} & {summary_statistic[3]:.0f} & {summary_statistic[4]:.0f} \\\\")
 
-	# LATEX table footer
-	output_str += "\\bottomrule \n"
-	output_str += "\\end{tabular}"
+	total_df = total_df.transpose()
 
-	with open(f"{outputpath}summary_statistics_LaTeX.txt", "w") as file:
-	  file.write(output_str)
+	print(total_df.round(2).to_latex())
 
 
 def return_individual_sum_stats(statistic, mvcode=-99):
-    """
-    Calculates summary statistics, handling missing values (mvcode).
+	"""
+	Calculates summary statistics, handling missing values (mvcode).
 
-    Args:
-        statistic (numpy.ndarray): The array containing data for which to calculate statistics.
-        mvcode (int, optional): The code representing missing values. Defaults to -99.
+	Args:
+		statistic (numpy.ndarray): The array containing data for which to calculate statistics.
+		mvcode (int, optional): The code representing missing values. Defaults to -99.
 
-    Returns:
-        numpy.ndarray: An array containing the calculated statistics (mean, median, std, min, max).
-    """
+	Returns:
+		numpy.ndarray: An array containing the calculated statistics (mean, median, std, min, max).
+	"""
 
-    # Remove observations with missing values (mvcode) before calculating statistics
-    filtered_statistic = statistic[statistic != mvcode]
+	# Remove observations with missing values (mvcode) before calculating statistics
+	filtered_statistic = statistic[statistic != mvcode]
 
-    # Check if any data remains after filtering
-    if not filtered_statistic.any():
-        raise ValueError("No valid data for calculating statistics. All values are missing (mvcode).")
+	# Check if any data remains after filtering
+	if not filtered_statistic.any():
+		raise ValueError("No valid data for calculating statistics. All values are missing (mvcode).")
 
-    mean = np.mean(filtered_statistic)
-    median = np.median(filtered_statistic)
-    std = np.std(filtered_statistic)
-    min = np.min(filtered_statistic)
-    max = np.max(filtered_statistic)
+	mean = np.mean(filtered_statistic)
+	median = np.median(filtered_statistic)
+	std = np.std(filtered_statistic)
+	min = np.min(filtered_statistic)
+	max = np.max(filtered_statistic)
 
-    return np.array((mean, median, std, min, max))
+	return np.array((mean, median, std, min, max))
+
+
+def tech_sorted_sum_stats():
+	(IDs, owncap, obsmat, lsdcap, totcap, LTKratio, totasst, totliab, equity, cash,
+	 CAratio, debtasst, intgoods, nkratio, rloutput, ykratio, cashflow, dividends,
+	 divgrowth, dvgobsmat, DVKratio, DVFEratio, eqinject, goteqinj, grossinv, gikratio,
+	 netinv, nikratio, iobsmat, age_2001, init_yr, init_age, av_cows, famsize, cohorts,
+	 chrttype, milktype, herdtype, farmtype, avgage, datawgts, initstate) = loaddat(timespan, np.array([1, 0]), 1,
+																					chrtnum, chrtstep, sizescreen,
+																					wgtddata)
+
+	no_stan = np.sum(milktype == 1)
+	no_parlor = np.sum(milktype == 2)
+
+	df1 = pd.DataFrame([[no_stan, no_parlor]], columns=['Stanchion', 'Parlor'], index=['No. of farms'])
+
+	# Split all medians into either tech type
+	stan_list = []
+	parlor_list = []
+
+	for var in [famsize, totcap, av_cows, ykratio, nkratio, gikratio, debtasst, CAratio]:
+
+		stan_type = var[(milktype == 1).flatten()]
+		parlor_type = var[(milktype == 2).flatten()]
+
+		stan_type = stan_type[stan_type != mvcode]
+		parlor_type = parlor_type[parlor_type != mvcode]
+
+		med_s, med_p = np.median(stan_type), np.median(parlor_type)
+
+		stan_list.append(med_s)
+		parlor_list.append(med_p)
+
+	df = pd.DataFrame([stan_list, parlor_list]).transpose()
+	df.columns = ['Stanchion', 'Parlor']
+
+	df.index = ['No. of operators',
+				'Total capital',
+				'Herd size (cows)',
+				'Output / Capital',
+				'Intermediate goods / Capital',
+				'Investment / Capital',
+				'Debt / Assets',
+				'Cash / Assets']
+
+	df = pd.concat([df1, df])
+
+	print(df.round(2).to_latex())
+	return df
+
+
+def graphs(gam, ag2, nshft, fcost, rloutput, totcap, intgoods, obsmat,
+		   farmtype, av_cows, famsize, datawgts, chrttype, iobsmat,
+		   dvgobsmat, dividends, divgrowth, LTKratio, debtasst, nkratio,
+		   gikratio, CAratio, ykratio, dumdwgts, avgage, k_0, optNK, TFP_FE,
+		   randrows, dumswgts, numsims):
+
+	# Simulated data
+	feshks = TFP_FE[randrows]
+	k_0 = k_0[randrows]
+	optNK = optNK[randrows]
+
+	(ageSim, assetSim, cashSim, debtSim, divSim, dvgSim, eqinjSim, goteqiSim, equitySim, expenseSim, fracRPSim,
+	 intRateSim, liqDecSim, NKratioSim, outputSim, totKSim, ZvalSim, aliveSim, ialiveSim, dvgaliveSim,
+	 fwdalivesim, divaliveSim, DVKalivesim, cshaliveSim, CAaliveSim, exiterrs, deprSim, NInvSim,
+	 GInvSim, DAratioSim, CAratioSim, YKratioSim, NIKratioSim, GIKratioSim, DVKratioSim,
+	 DVKratioSim, profitSim, netWorthSim, avxerr, ftype_sim, simavg) = loadSims(fcost, gam, ag2, nshft, k_0, optNK, timespan,
+																		numsims,
+																		cashlag, tfplag, divlag, divbasemin, bigG,
+																		gkE, dlt, rdgE, mvcode, feshks, prnres)
+
+	# Load files
+	cht_sim = np.loadtxt(f'{iopath}cht_sim.txt')
+	cht_sim = cht_sim.reshape(-1, 1)
+
+	simwgts = np.loadtxt(f'{iopath}simwgts.txt')
+
+	if sizevar == 1:
+		fsSim = feshks
+	elif sizevar == 2:
+		fsSim = av_cows[randrows] / famsize[randrows]  # Ensure `av_cows` and `famsize` are defined
+
+	if GMMsort == 0:
+		profsort = 0
+	else:
+		profsort = ftype_sim
+
+	sim_profiles = simprofs(profsort, timespan, FSstate, checktie, fsSim, cht_sim, aliveSim,
+							ialiveSim, dvgaliveSim, divaliveSim, CAaliveSim, totKSim, divSim,
+							dvgSim, DAratioSim, NKratioSim, GIKratioSim, CAratioSim, YKratioSim,
+							simwgts, obsmat, dumswgts, prngrph, avgage)
+
+	(tkqntsim, DAqntsim, nkqntsim, gikqntsim, CAqntsim, ykqntsim, divqntsim, dvgqntSim, obsavgsim,
+	 sim_data_matrixes) = sim_profiles
+
+	# Real data
+	dataset = datasetup(gam, ag2, nshft, fcost, rloutput, totcap, intgoods, obsmat,
+						farmtype, av_cows, famsize, datawgts, chrttype, iobsmat,
+						dvgobsmat, dividends, divgrowth, LTKratio, debtasst, nkratio,
+						gikratio, CAratio, ykratio, dumdwgts, avgage)
+	(TFPaggshks, TFP_FE, TFPaggeffs, tkqntdat, DAqntdat, CAqntdat, nkqntdat,
+	 gikqntdat, ykqntdat, divqntdat, dvgqntdat, obsavgdat, tkqcnts, divqcnts, dvgqcnts,
+	 std_zi, zvec, fevec, k_0, optNK, optKdat, countadj, real_data_matrixes) = dataset
+
+	doplot(real_data_matrixes, sim_data_matrixes)
+
+
+def comp_beq(fcost, gam, ag2, nshft, k_0, optNK, TFP_FE, randrows):
+
+	# Simulated data
+	feshks = TFP_FE[randrows]
+	k_0 = k_0[randrows]
+	optNK = optNK[randrows]
+
+	(ageSim, assetSim, cashSim, debtSim, divSim, dvgSim, eqinjSim, goteqiSim, equitySim, expenseSim, fracRPSim,
+	 intRateSim, liqDecSim, NKratioSim, outputSim, totKSim, ZvalSim, aliveSim, ialiveSim, dvgaliveSim,
+	 fwdalivesim, divaliveSim, DVKalivesim, cshaliveSim, CAaliveSim, exiterrs, deprSim, NInvSim,
+	 GInvSim, DAratioSim, CAratioSim, YKratioSim, NIKratioSim, GIKratioSim, DVKratioSim,
+	 DVKratioSim, profitSim, netWorthSim, avxerr, ftype_sim, simavg) = loadSims(fcost, gam, ag2, nshft, k_0, optNK, timespan,
+																		numsims,
+																		cashlag, tfplag, divlag, divbasemin, bigG,
+																		gkE, dlt, rdgE, mvcode, feshks, prnres)
+
+
+
+	df = pd.DataFrame(simavg).transpose()
+	df.columns = ['frac alive', 'TFP shks', 'Assets', 'Debt', 'Debt/Assets', 'Cash/Assets', 'Capital',
+				 'Igoods/K', 'Y/K', 'Net Inv/K', 'Gross Inv/K', 'exiterrs']
+	
