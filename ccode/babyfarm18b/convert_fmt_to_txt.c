@@ -68,7 +68,7 @@ int main(int argc, char *argv[])
     GMatrix obsSimPtr, iobsSimPtr, dvgobsSimPtr, FEshksPtr, IDsimPtr, simwgtsPtr, ftype_simPtr;
 
     // Read in .fmt files
-    obsSimPtr       = gau5read(strcat(strcpy(fullpath,rootdir),"obssim.fmt")); 
+    obsSimPtr       = gau5read(strcat(strcpy(fullpath,rootdir),"obsSim.fmt")); 
     iobsSimPtr      = gau5read(strcat(strcpy(fullpath,rootdir),"iobsSim.fmt")); 
     dvgobsSimPtr    = gau5read(strcat(strcpy(fullpath,rootdir),"dvgobsSim.fmt")); 
     FEshksPtr       = gau5read(strcat(strcpy(fullpath,rootdir),"FEshks.fmt")); 
@@ -390,7 +390,6 @@ void writeGMatrixToFile(const char* filename, const GMatrix* mat) {
     for (int j = 0; j < mat->m; j++) {
       fprintf(fp, "%lf\n", mat->data[i * mat->m + j]); // Print element and space
     }
-    fprintf(fp, "\n"); // Newline after each row
   }
 
   fclose(fp); // Close the file

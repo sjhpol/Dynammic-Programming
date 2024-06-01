@@ -1653,8 +1653,8 @@ def onerun(parmvec, fixvals, betamax, linprefs, nobeq, w_0, bigR, numFTypes, ina
 
 	# Save intermediate results, replace `save_path` with actual save logic if needed
 	np.savetxt(f'{iopath}job.txt', job)
-	np.savetxt(f'{iopath}pref_parms.txt', pref_parms)
-	np.savetxt(f'{iopath}fin_parms.txt', fin_parms)
+	np.savetxt(f'{iopath}prefparms.txt', pref_parms)
+	np.savetxt(f'{iopath}finparms.txt', fin_parms)
 	np.savetxt(f'{iopath}zvec.txt', zvec)
 	np.savetxt(f'{iopath}fevec.txt', fevec)
 	np.savetxt(f'{iopath}zshks.txt', zshks)
