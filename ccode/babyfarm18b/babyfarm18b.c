@@ -24,7 +24,7 @@
 #pragma warning( once : 4996 )
 
 #define NUM_THREADS 52   // PC has 8 threads, but save a thread for other work
-#define switchMac 1     // 0: Sangeeta in Hunter, 1: John in Albany 
+#define switchMac 0     // 1: Hjaltes mac. 0: Hjalte's arbejdskomputer 
 #define printOn 1        //'bool' for whether to print or not.  (will probably depend on job (whether estimating or not), MPI, etc.
 #define errorPrintOn 1   //want separate tests for printing errors and printing other things.
 #define PI 3.14159265
@@ -305,9 +305,9 @@ int main(int argc, char *argv[])
    }
    else if (switchMac==0) 
    {
-      strcpy(rootdir, "c:\\users\\sangeeta\\dropbox\\farms\\estimation_fake\\iofiles\\");
-      strcpy(outputdir, "c:\\users\\sangeeta\\dropbox\\farms\\estimation_fake\\output\\");
-      strcpy(datadir, "c:\\users\\sangeeta\\dropbox\\farms\\estimation_fake\\data\\");
+      strcpy(rootdir, "C:\\Users\\zcl375\\Dynammic-Programming\\iofiles\\");
+      strcpy(outputdir, "C:\\Users\\zcl375\\Dynammic-Programming\\output\\");
+      strcpy(datadir, "C:\\Users\\zcl375\\Dynammic-Programming\\data\\");
    }
   
    GaussJobPtr = readDoubleList(strcat(strcpy(fullpath,rootdir),"job.txt"));
