@@ -1,0 +1,41 @@
+void reshape_7d_matrix(double *packed_array, int *original_shape, double *reshaped_matrix) {
+    // Calculate total number of elements
+    int total_elements = 1;
+    for (int i = 0; i < 7; i++) {
+        total_elements *= original_shape[i];
+    }
+
+    // Check if packed array size matches original shape
+    if (total_elements != 1) {
+        printf("Error: Packed array size does not match original shape.\n");
+        return;
+    }
+
+    // Reshape the packed array
+    int current_index = 0;
+    for (int dim1 = 0; dim1 < original_shape[0]; dim1++) {
+        for (int dim2 = 0; dim2 < original_shape[1]; dim2++) {
+            for (int dim3 = 0; dim3 < original_shape[2]; dim3++) {
+                for (int dim4 = 0; dim4 < original_shape[3]; dim4++) {
+                    for (int dim5 = 0; dim5 < original_shape[4]; dim5++) {
+                        for (int dim6 = 0; dim6 < original_shape[5]; dim6++) {
+                            for (int dim7 = 0; dim7 < original_shape[6]; dim7++) {
+                                reshaped_matrix[dim1 * original_shape[1] * original_shape[2] * original_shape[3] *
+                                                original_shape[4] * original_shape[5] * original_shape[6] +
+                                                dim2 * original_shape[2] * original_shape[3] * original_shape[4] *
+                                                original_shape[5] * original_shape[6] +
+                                                dim3 * original_shape[3] * original_shape[4] * original_shape[5] *
+                                                original_shape[6] +
+                                                dim4 * original_shape[4] * original_shape[5] * original_shape[6] +
+                                                dim5 * original_shape[5] * original_shape[6] +
+                                                dim6 * original_shape[6] +
+                                                dim7] = packed_array[current_index];
+                                current_index++;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
