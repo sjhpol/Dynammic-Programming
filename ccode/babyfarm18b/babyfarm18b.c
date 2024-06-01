@@ -537,8 +537,8 @@ int main(int argc, char *argv[])
       if (printOn>0)
       {
          end = clock();
-         printf("Finished period %5d operating decisions in %5d minutes %5d seconds \n ",tInd, (end-start)/CLOCKS_PER_SEC/60,
-                ((end-start)/CLOCKS_PER_SEC)%60);
+         //printf("Finished period %5d operating decisions in %5d minutes %5d seconds \n ",tInd, (end-start)/CLOCKS_PER_SEC/60,
+          //      ((end-start)/CLOCKS_PER_SEC)%60);
 //         fprintf(timeStamp, "Finished period %5d operating decisions in %5d minutes %5d seconds \n ",tInd, (end-start)/CLOCKS_PER_SEC/60,
 //                 ((end-start)/CLOCKS_PER_SEC)%60);
          start = clock();
@@ -559,8 +559,8 @@ int main(int argc, char *argv[])
       if (printOn>0)
       {
          end = clock();
-         printf("Finished period %5d occupation decisions in %5d minutes %5d seconds \n ",tInd, (end-start)/CLOCKS_PER_SEC/60,
-                ((end-start)/CLOCKS_PER_SEC)%60);
+         //printf("Finished period %5d occupation decisions in %5d minutes %5d seconds \n ",tInd, (end-start)/CLOCKS_PER_SEC/60,
+           //     ((end-start)/CLOCKS_PER_SEC)%60);
 //         fprintf(timeStamp, "Finished period %5d occupation decisions in %5d minutes %5d seconds \n ",tInd, (end-start)/CLOCKS_PER_SEC/60,
 //                ((end-start)/CLOCKS_PER_SEC)%60);
          fclose(timeStamp);
@@ -1287,7 +1287,7 @@ void GetRulesWorker(int iAssetsmin, int iAssetsmax, double *assetvec, double *wa
 
    for (tInd = (lifespan-1); tInd>= 0; tInd--)
    {  
-      printf("tInd %5d\n", tInd);
+      // printf("tInd %5d\n", tInd);
       for (aInd = iAssetsmin; aInd<iAssetsmax; aInd++) 
       {               
       // Compute cash-on-hand (GROSS OF TAXES), before any transfers
@@ -1891,7 +1891,7 @@ void simulation(double *initAges, double *initYears, double *initCapital, double
 // Next, decide whether to operate.  Exiting farmers "vanish"
 // Finally, pick operating decisions for this period
    
-   printf("Rank=%d, iSimmin=%d iSimmax=%d \n", rank, iSimmin, iSimmax);
+   //printf("Rank=%d, iSimmin=%d iSimmax=%d \n", rank, iSimmin, iSimmax);
    
    tempvec = (double *)calloc(9,sizeof(double));
 // Order:  (0) liquidation decision; (1) fraction of debt repaid; (2) equity; (3) total capital; 
