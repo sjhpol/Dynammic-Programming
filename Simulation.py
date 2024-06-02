@@ -260,6 +260,7 @@ def simulation(initAges, initYears, initCapital, initTotAssets,
       totAssets = initTotAssets[personInd]
       debt = initDebt[personInd]
       lkInd, lkWgt = GetLocation(lagcapvec, lagCapital)
+      lkWgt = 0
       lkInd2 = 0
       if lagcapNum > 1:
           lkInd2 = lkInd
@@ -282,7 +283,7 @@ def simulation(initAges, initYears, initCapital, initTotAssets,
       fracRepaidsimsMtx[year0][personInd] = fracRepaid
       liqDecsimsMtx[year0][personInd] = float(liqDec)
 
-      for yearInd in range(year0, timespan + 1):
+      for yearInd in range(year0, timespan + 1): # plus 1?
           age = age0 + yearInd - year0
           ageInd = age - bornage
           if ageInd < 0:
@@ -362,6 +363,7 @@ def simulation(initAges, initYears, initCapital, initTotAssets,
           taInd, taWgt = GetLocation(totassetvec, totAssets)
           dInd, dWgt = GetLocation(debtvec, debt)
           lkInd, lkWgt = GetLocation(lagcapvec, lagCapital)
+          lkWgt = 0
           lkInd2 = 0
           if lagcapNum > 1:
               lkInd2 = lkInd
@@ -371,7 +373,7 @@ def simulation(initAges, initYears, initCapital, initTotAssets,
           if zNum2 > 1:
               zInd2 = zInd
           ZsimsMtx[yearInd + 1][personInd] = zValue
-          ZIsimsMtx[yearInd + 1][personInd] = zInd # + 1 GAUSS indexing
+          ZIsimsMtx[yearInd + 1][personInd] = zInd + 1 # + 1 GAUSS indexing
           if zWgt < 0.5:
               ZIsimsMtx[yearInd + 1][personInd] += 1
           FEIsimsMtx[yearInd + 1][personInd] = FEIsimsMtx[0][personInd]
@@ -391,7 +393,7 @@ def simulation(initAges, initYears, initCapital, initTotAssets,
 
           asstsimsMtx[yearInd + 1][personInd] = totAssets
           debtsimsMtx[yearInd + 1][personInd] = debt
-          fracRepaidsimsMtx[yearInd + 1][personInd] = fracRepaid
+          fracRepaidsimsMtx[yearInd + 1][personInd] = fracRepaid # + 2?
           liqDecsimsMtx[yearInd + 1][personInd] = float(liqDec)
 
 simulation(initAges, initYears, initCapital, initTotAssets,
@@ -428,7 +430,7 @@ save_processed_data_txt(liqDecsimsMtx, "liqDecS.txt", iopath)
 save_processed_data_txt(agesimsMtx, "ageS.txt", iopath)
 save_processed_data_txt(dividendsimsMtx, "divsS.txt", iopath)
 save_processed_data_txt(totKsimsMtx, "totKS.txt", iopath)
-save_processed_data_txt(NKratsimsMtx, "NKratos.txt", iopath)
+save_processed_data_txt(NKratsimsMtx, "NKratios.txt", iopath)
 save_processed_data_txt(cashsimsMtx, "cashS.txt", iopath)
 save_processed_data_txt(IRsimsMtx, "intRateS.txt", iopath)
 save_processed_data_txt(NWsimsMtx, "equityS.txt", iopath)

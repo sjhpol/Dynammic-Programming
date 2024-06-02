@@ -149,7 +149,7 @@ def prodFnParms(alpha0: float, gamma0: float) -> tuple[float, float, float, floa
 
 # double getUtility(double cons);
 # This is just our utility function. cons = consumption. easy!
-@jit(nopython=True, fastmath=True)
+@jit(nopython=True)
 def getUtility(cons: float) -> float:
     if nu < 0:
         print("getUtility(): passed nu==0, exiting.")
@@ -412,7 +412,7 @@ def getAssignmentVec(numPoints, numNodes):
 
     return assignmentVec
 
-@jit(nopython=True, fastmath=True)
+@jit(nopython=True)
 def getExpectation(RandVar: np.ndarray,
                    NPTAIndex: np.ndarray,
                    NPTAWeight: np.ndarray,
@@ -428,8 +428,8 @@ def getExpectation(RandVar: np.ndarray,
             iZNP2 = iZNP
             if zNum2 == 1:
               iZNP2 = 0
-            #avg = NPTAWeight[iZNP] * RandVar[iZNP2, 0, iNPTA, iDebt] + (1 - NPTAWeight[iZNP]) * RandVar[iZNP2, 0, iNPTA + 1, iDebt] # ORIGINAL
-            avg = NPTAWeight[iZNP] * RandVar[iZNP2, 0, iNPTA, iDebt] + (1 - NPTAWeight[iZNP]) * RandVar[iZNP2, 0, iNPTA, iDebt] # ORIGINAL
+            avg = NPTAWeight[iZNP] * RandVar[iZNP2, 0, iNPTA, iDebt] + (1 - NPTAWeight[iZNP]) * RandVar[iZNP2, 0, iNPTA + 1, iDebt] # ORIGINAL
+            #avg = NPTAWeight[iZNP] * RandVar[iZNP2, 0, iNPTA, iDebt] + (1 - NPTAWeight[iZNP]) * RandVar[iZNP2, 0, iNPTA, iDebt] # ORIGINAL
             expectsum += zProbs[iZNP] * avg
     else:
         for iZNP in range(zNum):
@@ -438,10 +438,10 @@ def getExpectation(RandVar: np.ndarray,
             if zNum2 == 1:
               iZNP2 = 0
 
-            #avg = NPTAWeight[iZNP] * RandVar[iZNP2, iLagK, iNPTA, iDebt] + (1 - NPTAWeight[iZNP]) * RandVar[iZNP2, iLagK, iNPTA + 1, iDebt] # ORIGINAL
-            #avg2 = NPTAWeight[iZNP] * RandVar[iZNP2, iLagK + 1, iNPTA, iDebt] + (1 - NPTAWeight[iZNP]) * RandVar[iZNP2, iLagK + 1, iNPTA + 1, iDebt]
-            avg = NPTAWeight[iZNP] * RandVar[iZNP2, iLagK, iNPTA, iDebt] + (1 - NPTAWeight[iZNP]) * RandVar[iZNP2, iLagK, iNPTA, iDebt]
-            avg2 = NPTAWeight[iZNP] * RandVar[iZNP2, iLagK + 1, iNPTA, iDebt] + (1 - NPTAWeight[iZNP]) * RandVar[iZNP2, iLagK + 1, iNPTA, iDebt]
+            avg = NPTAWeight[iZNP] * RandVar[iZNP2, iLagK, iNPTA, iDebt] + (1 - NPTAWeight[iZNP]) * RandVar[iZNP2, iLagK, iNPTA + 1, iDebt] # ORIGINAL
+            avg2 = NPTAWeight[iZNP] * RandVar[iZNP2, iLagK + 1, iNPTA, iDebt] + (1 - NPTAWeight[iZNP]) * RandVar[iZNP2, iLagK + 1, iNPTA + 1, iDebt]
+            #avg = NPTAWeight[iZNP] * RandVar[iZNP2, iLagK, iNPTA, iDebt] + (1 - NPTAWeight[iZNP]) * RandVar[iZNP2, iLagK, iNPTA, iDebt]
+            #avg2 = NPTAWeight[iZNP] * RandVar[iZNP2, iLagK + 1, iNPTA, iDebt] + (1 - NPTAWeight[iZNP]) * RandVar[iZNP2, iLagK + 1, iNPTA, iDebt]
             avg = avg * iLagKwgt + avg2 * (1 - iLagKwgt)
             expectsum += zProbs[iZNP] * avg
 
@@ -724,7 +724,7 @@ def getFinalLiq(totassetvec: np.ndarray,
 # retained net worth index?
 
 # This is going to be a - to debug.
-@jit(nopython=True, fastmath=True, parallel=True)
+@jit(nopython=True, parallel=True)
 def getliqDecision(totassetvec: np.ndarray,
                    debtvec: np.ndarray,
                    equityvec: np.ndarray,
@@ -814,7 +814,7 @@ def getliqDecision(totassetvec: np.ndarray,
 # This is basically the function which is scipy.optimize
 # We evaluate the entire space, get utility, and if utility is higher than previously recorded, we write down those new indexes.
 # We then return about a million indexes
-@njit(fastmath=True, parallel=True)
+@njit(parallel=True)           #(parallel=True)
 def getOperatingDec(eqAssignvec, equityvec, capitalvec, lagcapvec, debtvec, NKratiovec, cashvec,
                     zTransmtx, CLKindvec, CLKwgtvec, goodGridPoint, NPtotassetWeight, NPtotassetIndex, valfuncMat,
                     fracRepaidVec, valfuncFarm, bestIntRateFarm, bestKIndexFarm, bestNKratIndexFarm, bestCashIndexFarm,
