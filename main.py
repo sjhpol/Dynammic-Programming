@@ -138,16 +138,16 @@ res = minimize(onerun, x0=parmvec, args=(fixvals, betamax, linprefs, nobeq, w_0,
 			   options={'maxiter': 10})
 
 
-# numparms = parmvec.shape[0]
-# fixvals = parmvec
-# zerovec = 1 					# Note, that this becomes a vector later <_<. Also never has zeroes
-# onerun(parmvec, fixvals, betamax, linprefs, nobeq, w_0, bigR, numFTypes, inadaU, nonshft, noDScost, nofcost,
-# 		  	nocolcnst, prnres, noReneg, finparms0, idioshks, randrows,
-# 		   rloutput, totcap, intgoods, obsmat,
-# 		   farmtype, av_cows, famsize, datawgts, chrttype, iobsmat,
-# 		   dvgobsmat, dividends, divgrowth, LTKratio, debtasst, nkratio,
-# 		   gikratio, CAratio, ykratio, dumdwgts, numsims, avgage)
-#
+numparms = parmvec.shape[0]
+fixvals = parmvec
+zerovec = 1 					# Note, that this becomes a vector later <_<. Also never has zeroes
+onerun(parmvec, fixvals, betamax, linprefs, nobeq, w_0, bigR, numFTypes, inadaU, nonshft, noDScost, nofcost,
+		  	nocolcnst, prnres, noReneg, finparms0, idioshks, randrows,
+		   rloutput, totcap, intgoods, obsmat,
+		   farmtype, av_cows, famsize, datawgts, chrttype, iobsmat,
+		   dvgobsmat, dividends, divgrowth, LTKratio, debtasst, nkratio,
+		   gikratio, CAratio, ykratio, dumdwgts, numsims, avgage)
+
 
 
 if graph_time:

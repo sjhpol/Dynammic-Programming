@@ -1,5 +1,3 @@
-import numpy
-
 from settings import *
 
 from babyfarm18b import prodFnParms, numSims, ftNum, alpha1, gamma1, GetLocation, alpha2, gamma2, feNum, zNum2, lagcapNum, c_0, eqInject, getBaseIGoods, igshift, fixedcost, getBaseRevenues, delta, eGK
@@ -263,6 +261,7 @@ def run_sim():
 			debt = initDebt[personInd]
 			lkInd, lkWgt = GetLocation(lagcapvec, lagCapital)
 			lkInd2 = 0
+			lkWgt = 0
 			if lagcapNum > 1:
 				lkInd2 = lkInd
 			taInd, taWgt = GetLocation(totassetvec, totAssets)
@@ -363,6 +362,7 @@ def run_sim():
 				taInd, taWgt = GetLocation(totassetvec, totAssets)
 				dInd, dWgt = GetLocation(debtvec, debt)
 				lkInd, lkWgt = GetLocation(lagcapvec, lagCapital)
+				lkWgt = 0
 				lkInd2 = 0
 				if lagcapNum > 1:
 					lkInd2 = lkInd
