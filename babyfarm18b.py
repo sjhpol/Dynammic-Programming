@@ -254,10 +254,10 @@ def getBaseRevenues(capital: float, igoods: float, gamma: float, ag2: float) -> 
 # Gives the dimension. Breaks in edge-cases.
 # int Locate(double *Xarray, double x, int DIM)
 @jit(nopython=True)
-def Locate(Xarray: npt.ArrayLike, x: float) -> int:
-    idx = np.searchsorted(Xarray, x, side='left') - 1
+def Locate(Xarray, x):
+    idx = np.searchsorted(Xarray, x, side='right') - 1
 
-    return max(idx, 0) # Bounds our index to the left
+    return min(max(idx, 0), Xarray.shape[0]-2) # Bounds our index to the left AND to the right.
 
 # Example usage:
 # Xarray = np.array([1, 3, 5])  # Assuming Xarray is sorted in ascending order
@@ -278,9 +278,9 @@ def Locate(Xarray: npt.ArrayLike, x: float) -> int:
 
 # This function is used in the big loops a lot. Very important.
 # The weights tell you how close you are. Makes it speedy, by lowering the total amount of needed grid points!
-@jit(nopython=True, fastmath=True)
+@jit(nopython=True)
 def GetLocation(xP: np.ndarray, x: float) -> Tuple[int, float]:
-    j = Locate(xP, x) #+ 1
+    j = Locate(xP, x) + 1
     Ind1 = j - 1
 
     # Check if the denominator is not zero before performing division
@@ -480,6 +480,9 @@ CLKwgtvec = np.zeros((capitalNum))
 
 getclosestLK(capitalNum, capitalvec, lagcapvec, CLKindvec, CLKwgtvec)
 
+if (phi == 0):
+    lagcapNum = 1
+
 ### Shocks + Markov chains ###
 
 # z (TFP)
@@ -494,7 +497,7 @@ zInvarCDF = GetCDFvec(zNum, zInvarDist)
 
 # fixed effects (productivity!) (TFP)
 feNum = int(np.floor(rounder + fevec[0]))
-feProbs2, feValues, __ = getMarkovChain(fevec, feNum)
+feProbs2, feValues, __ = getMarkovChain(fevec, feNum) # Vi skal ikke bruge feProbs til noget.
 
 # gk = gains on capital. Conditionally i.i.d.
 rhoGK = gkvec[1]
@@ -517,16 +520,7 @@ recsize = (lifespan+1)*assetNum
 #GetUtilityBeq(bequestUM,assetvec)      # Find utility from bequest matrix
 IncomeAtBrk(taxBrk, taxMar, incomeBrk) # after-tax income at bracket points
 
-recsize         = (lifespan+1)*assetNum
-valfFuncWPtr    = np.nan + np.zeros(recsize)
-recsize         = lifespan*assetNum
-bestCWPtr       = np.nan + np.zeros(recsize) # optimal consumption choices
-bestNPIWPtr     = np.nan + np.zeros(recsize) # index number of optimal time-t+1 assets
 
-valfuncWork     = valfFuncWPtr.reshape(lifespan+1,assetNum)
-valfuncWork[lifespan] = bequestUM
-bestCWork       = bestCWPtr.reshape(lifespan,assetNum)
-bestNPIWork     = bestNPIWPtr.reshape(lifespan,assetNum)
 
 # Function to compute rules for a range of assets
 @jit(nopython=True)
@@ -602,17 +596,6 @@ def GetRulesWorker(assetvec, wageProfile, valfuncWork, bestCWork, bestNPIWork):
 
     return valfuncWork, bestCWork, bestNPIWork 
 
-
-valfuncWork, bestCWork, bestNPIWork = GetRulesWorker(assetvec, wageprofilevec, valfuncWork, bestCWork, bestNPIWork)
-
-# Calculate mapping from TotAssets x Lagged Capital x Debt to post-Liquidation Net Worth/Assets
-# These are age-invariant, financial calculations
-
-postliqAssets = np.zeros((lagcapNum, totassetNum, debtNum))
-postliqNetWorth = np.zeros((lagcapNum, totassetNum, debtNum))
-postliqNWIndex = np.zeros((lagcapNum, totassetNum, debtNum))
-retNWIndex       = np.zeros((lagcapNum, totassetNum, debtNum))
-
 @jit(nopython=True)
 def getliqIndex(assetvec: np.ndarray, totassetvec: np.ndarray, lagcapvec: np.ndarray,
                 debtvec: np.ndarray, postliqAssets: np.ndarray, postliqNetWorth: np.ndarray,
@@ -635,7 +618,6 @@ def getliqIndex(assetvec: np.ndarray, totassetvec: np.ndarray, lagcapvec: np.nda
 
     return postliqAssets, postliqNetWorth, postliqNWIndex
 
-postliqAssets, postliqNetWorth, postliqNWIndex = getliqIndex(assetvec, totassetvec, lagcapvec, debtvec, postliqAssets, postliqNetWorth, postliqNWIndex, SLfrac, _lambda)
 
 #retNWIndex = np.zeros((lagcapNum, totassetNum, debtNum)) # Special. Not defined by the previous call
 
@@ -693,30 +675,9 @@ def getNPtotAssets(capvec: np.ndarray,
 
     return NPtotassetWeight, NPtotassetIndex, goodGridPoint
 
-NPtotassetWeight = np.zeros((capitalNum, ftNum, feNum, NKratioNum, cashNum, zNum))
-NPtotassetIndex  = np.zeros((capitalNum, ftNum, feNum, NKratioNum, cashNum, zNum))
-goodGridPoint    = np.zeros((capitalNum, ftNum, feNum, NKratioNum, cashNum))
-NPtotassetWeight, NPtotassetIndex, goodGridPoint = getNPtotAssets(capitalvec, capitalNum, NKratiovec, cashvec, feValues, zValues,
-                                                totassetvec, NPtotassetWeight, NPtotassetIndex, goodGridPoint)
 
 # Final stretch. Wall of answers
 
-liqDecisionMat = np.zeros((lifespan + 1, ftNum, feNum, zNum2, lagcapNum, totassetNum, debtNum))
-valfuncMat = np.zeros((lifespan + 1, ftNum, feNum, zNum2, lagcapNum, totassetNum, debtNum))
-fracRepaidMat = np.zeros((lifespan + 1, ftNum, feNum, zNum2, lagcapNum, totassetNum, debtNum))
-valfuncFarm = np.zeros((lifespan, ftNum, feNum, zNum2, lagcapNum, equityNum))
-bestIntRateFarm = np.zeros((lifespan, ftNum, feNum, zNum2, lagcapNum, equityNum))
-bestKIndexFarm = np.zeros((lifespan, ftNum, feNum, zNum2, lagcapNum, equityNum), dtype=int)
-bestKFarm = np.zeros((lifespan, ftNum, feNum, zNum2, lagcapNum, equityNum))
-bestNKratIndexFarm = np.zeros((lifespan, ftNum, feNum, zNum2, lagcapNum, equityNum), dtype=int)
-bestNKratFarm = np.zeros((lifespan, ftNum, feNum, zNum2, lagcapNum, equityNum))
-bestCashIndexFarm = np.zeros((lifespan, ftNum, feNum, zNum2, lagcapNum, equityNum), dtype=int)
-bestCashFarm = np.zeros((lifespan, ftNum, feNum, zNum2, lagcapNum, equityNum))
-bestDividendFarm = np.zeros((lifespan, ftNum, feNum, zNum2, lagcapNum, equityNum))
-bestDebtIndexFarm = np.zeros((lifespan, ftNum, feNum, zNum2, lagcapNum, equityNum), dtype=int)
-bestDebtFarm = np.zeros((lifespan, ftNum, feNum, zNum2, lagcapNum, equityNum))
-bestNPTAWeightFarm = np.zeros((lifespan, ftNum, feNum, zNum2, lagcapNum, equityNum, zNum))
-bestNPTAIndexFarm = np.zeros((lifespan, ftNum, feNum, zNum2, lagcapNum, equityNum, zNum), dtype=int)
 
 @jit(nopython=False)
 def getFinalLiq(totassetvec: np.ndarray,
@@ -761,8 +722,6 @@ def getFinalLiq(totassetvec: np.ndarray,
 
 
 # retained net worth index?
-retNWIndex, liqDecisionMat, valfuncMat, fracRepaidMat = getFinalLiq(totassetvec, lagcapvec, debtvec, assetvec,
-                                                          retNWIndex, liqDecisionMat, valfuncMat, fracRepaidMat);
 
 # This is going to be a - to debug.
 @jit(nopython=True, fastmath=True, parallel=True)
@@ -1051,18 +1010,7 @@ size = 1
 equityAssignments = getAssignmentVec(equityNum, size)
 
 
-# We structure this into tuples so that, here at the end, we can package the entire thing into *FAST*
-# To put in tInd, it just needs to go at either the front or the back of the argument list
 
-# get operating decision
-getOperatingDec_input = equityAssignments, equityvec, capitalvec, lagcapvec, debtvec, NKratiovec, cashvec, zTransmtx, CLKindvec, CLKwgtvec, goodGridPoint, NPtotassetWeight, NPtotassetIndex, valfuncMat, fracRepaidMat, valfuncFarm, bestIntRateFarm, bestKIndexFarm, bestNKratIndexFarm, bestCashIndexFarm, bestDividendFarm ,bestDebtIndexFarm, bestNPTAWeightFarm, bestNPTAIndexFarm, bestKFarm, bestNKratFarm, bestDebtFarm, bestCashFarm
-getOperatingDec_output = valfuncFarm, bestCashIndexFarm, bestDebtIndexFarm, bestIntRateFarm, bestKIndexFarm, bestNKratIndexFarm, bestDividendFarm, bestKFarm, bestNKratFarm, bestDebtFarm, bestCashFarm
-
-# liquidity farm
-getliqDecision_input = totassetvec, debtvec, equityvec, postliqAssets, postliqNWIndex, valfuncWork, valfuncFarm, liqDecisionMat, valfuncMat, fracRepaidMat
-getLiqDecision_output = liqDecisionMat, fracRepaidMat, valfuncMat
-
-#print(getliqDecision_input)
 
 @njit
 def main_loop(input_op, output_op, input_liq, output_liq) :
@@ -1075,490 +1023,84 @@ def main_loop(input_op, output_op, input_liq, output_liq) :
 
   return output_op, output_liq
 
-output_final_op, output_final_liq = main_loop(getOperatingDec_input, getOperatingDec_output, getliqDecision_input, getLiqDecision_output) 
-
-
-# Den dropper dem her lige nu i dit default usr/directory. Oh well!
-np.savetxt("VFI_output/feValues", feValues)
-np.savetxt("VFI_output/zValues", zValues)
-np.savetxt("VFI_output/totassetvec", totassetvec)
-np.savetxt("VFI_output/debtvec", debtvec)
-np.savetxt("VFI_output/equityvec", equityvec)
-np.savetxt("VFI_output/cashvec", cashvec)
-np.savetxt("VFI_output/lagcapvec", lagcapvec)
-np.savetxt("VFI_output/liqDecisionMat", liqDecisionMat)
-np.savetxt("VFI_output/fracRepaidMat", fracRepaidMat)
-np.savetxt("VFI_output/bestIntRateFarm", bestIntRateFarm)
-np.savetxt("VFI_output/bestCashFarm", bestCashFarm)
-np.savetxt("VFI_output/bestDividendFarm", bestDividendFarm)
-np.savetxt("VFI_output/bestKFarm", bestKFarm)
-np.savetxt("VFI_output/bestNKratFarm", bestNKratFarm)
-np.savetxt("VFI_output/bestDebtFarm", bestDebtFarm)
-
-"""
-TODO FOR IMPLEMENTATION.
-
-
-// All this write stuff we might not need.
-void WriteFunctions(double **valfuncWork, double **bestCWork, double **bestNPIWork,
-                    double ******valfuncFarm, double ******bestIntRateFarm, double ******bestCashFarm,
-                    double ******bestKFarm, double ******bestNKratFarm, double ******bestDividendFarm,
-                    double ******bestDebtFarm, double *******liqDecisionMat, double *******valfuncMat,
-                    double *******fracRepaidMat, double *assetvec, double *equityvec, double *lagcapvec,
-                    double *debtvec, double *totassetvec,  double *feValues);
-void WriteSims(double **FEIsimsMtx, double **ZsimsMtx, double **ZIsimsMtx, double **asstsimsMtx,
-               double **dividendsimsMtx, double **totKsimsMtx, double **NKratsimsMtx, double **cashsimsMtx,
-               double **IRsimsMtx, double **debtsimsMtx, double **NWsimsMtx, double **fracRepaidsimsMtx,
-               double **outputsimsMtx, double **liqDecsimsMtx, double **agesimsMtx, double **expensesimsMtx);
-
-
-// Important
-double intrplte7D(double *******decruleMat, int ageInd, int ftInd, int feInd, int zInd2, int lkInd2, int taInd, int dInd,
-                  double dWgt, double taWgt, double feWgt, double zWgt, double lkWgt);
-double intrplte6D(double ******decruleMat, int ageInd, int ftInd, int feInd, int zInd2, int lkInd2, int eqInd,
-                  double eqWgt, double feWgt, double zWgt, double lkWgt);
-
-// STØRSTE FUNKTIONER. DET SIDSTE VI TAGER.
-
-void simulation(double *initAges, double *initYears, double *initCapital, double *initTotAssets,
-                double *initDebt, double *farmtypes, double *feShksVec, double *feValues, double **zShksMtx,
-                double *zValues, double *totassetvec, double *debtvec, double *equityvec, double *cashvec,
-                double *lagcapvec, double **FEIsimsMtx, double **ZsimsMtx, double **ZIsimsMtx,
-                double **asstsimsMtx, double **dividendsimsMtx, double **totKsimsMtx, double **NKratsimsMtx,
-                double **cashsimsMtx, double **IRsimsMtx, double **debtsimsMtx, double **NWsimsMtx,
-                double **fracRepaidsimsMtx, double **outputsimsMtx, double **liqDecsimsMtx, double **agesimsMtx,
-                double **expensesimsMtx, double *******liqDecisionMat, double *******fracRepaidMat,
-                double ******bestIntRateFarm, double ******bestCashFarm, double ******bestDividendFarm,
-                double ******bestKFarm, double ******bestNKratFarm, double ******bestDebtFarm,
-                int iSimmin, int iSimmax);
-"""
-
-feValues = np.load(VFI_path + "feValues.npy")
-zValues = np.load(VFI_path + "zValues.npy")
-totassetvec = np.load(VFI_path + "totassetvec.npy")
-debtvec = np.load(VFI_path + "debtvec.npy")
-equityvec = np.load(VFI_path + "equityvec.npy")
-cashvec = np.load(VFI_path + "cashvec.npy")
-lagcapvec = np.load(VFI_path + "lagcapvec.npy")
-liqDecisionMat = np.load(VFI_path + "liqDecisionMat.npy")
-fracRepaidMat = np.load(VFI_path + "fracRepaidMat.npy")
-bestIntRateFarm = np.load(VFI_path + "bestIntRateFarm.npy")
-bestCashFarm = np.load(VFI_path + "bestCashFarm.npy")
-bestDividendFarm = np.load(VFI_path + "bestDividendFarm.npy")
-bestKFarm = np.load(VFI_path + "bestKFarm.npy")
-bestNKratFarm = np.load(VFI_path + "bestNKratFarm.npy")
-bestDebtFarm = np.load(VFI_path + "bestDebtFarm.npy")
-
-# Load the simulation files using np.loadtxt
-feShks = np.loadtxt(iopath + "feshks.txt")
-FTypesims = np.loadtxt(iopath + "ftype_sim.txt")
-initAges = np.loadtxt(iopath + "initages.txt")
-initDebt = np.loadtxt(iopath + "initdebt.txt")
-initCapital = np.loadtxt(iopath + "initK.txt")
-initTotAssets = np.loadtxt(iopath + "initta.txt")
-initYears = np.loadtxt(iopath + "inityrs.txt")
-zShks = np.loadtxt(iopath + "zshks.txt")
-
-recsize = (timespan + 1) * numSims
-
-# Initialize arrays with NaN values
-Zsims = np.nan + np.zeros(recsize)
-ZIsims = np.nan + np.zeros(recsize)  # Index numbers, TFP shock
-FEIsims = np.nan + np.zeros(recsize)  # Index numbers, fixed Effect TFP shock
-asstsims = np.nan + np.zeros(recsize)  # Total Assets, beginning of period
-debtsims = np.nan + np.zeros(recsize)  # Debt, beginning of period, pre-renegotiation
-fracRepaidsims = np.nan + np.zeros(recsize)  # Fraction of outstanding debt repaid
-liqDecsims = np.nan + np.zeros(recsize)  # Liquidation decisions
-agesims = np.nan + np.zeros(recsize)  # Age of farm head
-dividendsims = np.nan + np.zeros(recsize)  # Dividends/consumption
-totKsims = np.nan + np.zeros(recsize)  # Capital Stock, beginning of period
-NKratsims = np.nan + np.zeros(recsize)  # igoods/capital ratio
-cashsims = np.nan + np.zeros(recsize)  # Cash/liquid assets
-IRsims = np.nan + np.zeros(recsize)  # Contractual interest rates
-NWsims = np.nan + np.zeros(recsize)  # Net worth for period, post-renegotiation
-outputsims = np.nan + np.zeros(recsize)  # Output/revenues
-expensesims = np.nan + np.zeros(recsize)  # Operating expenditures
-
-# Reshape the arrays
-zShksMtx = zShks.reshape(timespan + 2, numSims+24)
-ZsimsMtx = Zsims.reshape(timespan + 1, numSims)
-ZIsimsMtx = ZIsims.reshape(timespan + 1, numSims)
-FEIsimsMtx = FEIsims.reshape(timespan + 1, numSims)
-asstsimsMtx = asstsims.reshape(timespan + 1, numSims)
-debtsimsMtx = debtsims.reshape(timespan + 1, numSims)
-fracRepaidsimsMtx = fracRepaidsims.reshape(timespan + 1, numSims)
-liqDecsimsMtx = liqDecsims.reshape(timespan + 1, numSims)
-agesimsMtx = agesims.reshape(timespan + 1, numSims)
-dividendsimsMtx = dividendsims.reshape(timespan + 1, numSims)
-totKsimsMtx = totKsims.reshape(timespan + 1, numSims)
-NKratsimsMtx = NKratsims.reshape(timespan + 1, numSims)
-cashsimsMtx = cashsims.reshape(timespan + 1, numSims)
-IRsimsMtx = IRsims.reshape(timespan + 1, numSims)
-NWsimsMtx = NWsims.reshape(timespan + 1, numSims)
-outputsimsMtx = outputsims.reshape(timespan + 1, numSims)
-expensesimsMtx = expensesims.reshape(timespan + 1, numSims)
-
-def intrplte6D(decruleMat, ageInd, ftInd, feInd, zInd2, lkInd2, eqInd,
-			   eqWgt, feWgt, zWgt, lkWgt, feNum, zNum2, lagcapNum):
-	interpVal = (decruleMat[ageInd][ftInd][feInd][zInd2][lkInd2][eqInd] * eqWgt +
-				 decruleMat[ageInd][ftInd][feInd][zInd2][lkInd2][eqInd + 1] * (1 - eqWgt)) * feWgt
-
-	if feNum > 1:
-		interpVal += (decruleMat[ageInd][ftInd][feInd + 1][zInd2][lkInd2][eqInd] * eqWgt +
-					  decruleMat[ageInd][ftInd][feInd + 1][zInd2][lkInd2][eqInd + 1] * (1 - eqWgt)) * (1 - feWgt)
-
-	if zNum2 > 1:
-		tempVal0 = (decruleMat[ageInd][ftInd][feInd][zInd2 + 1][lkInd2][eqInd] * eqWgt +
-					decruleMat[ageInd][ftInd][feInd][zInd2 + 1][lkInd2][eqInd + 1] * (1 - eqWgt)) * feWgt
-
-		if feNum > 1:
-			tempVal0 += (decruleMat[ageInd][ftInd][feInd + 1][zInd2 + 1][lkInd2][eqInd] * eqWgt +
-						 decruleMat[ageInd][ftInd][feInd + 1][zInd2 + 1][lkInd2][eqInd + 1] * (1 - eqWgt)) * (1 - feWgt)
-
-		interpVal = interpVal * zWgt + tempVal0 * (1 - zWgt)
-
-	if lagcapNum > 2:
-		tempVal1 = (decruleMat[ageInd][ftInd][feInd][zInd2][lkInd2 + 1][eqInd] * eqWgt +
-					decruleMat[ageInd][ftInd][feInd][zInd2][lkInd2 + 1][eqInd + 1] * (1 - eqWgt)) * feWgt
-
-		if feNum > 1:
-			tempVal1 += (decruleMat[ageInd][ftInd][feInd + 1][zInd2][lkInd2 + 1][eqInd] * eqWgt +
-						 decruleMat[ageInd][ftInd][feInd + 1][zInd2][lkInd2 + 1][eqInd + 1] * (1 - eqWgt)) * (1 - feWgt)
-
-		if zNum2 > 1:
-			tempVal0 = (decruleMat[ageInd][ftInd][feInd][zInd2 + 1][lkInd2 + 1][eqInd] * eqWgt +
-						decruleMat[ageInd][ftInd][feInd][zInd2 + 1][lkInd2 + 1][eqInd + 1] * (1 - eqWgt)) * feWgt
-
-			if feNum > 1:
-				tempVal0 += (decruleMat[ageInd][ftInd][feInd + 1][zInd2 + 1][lkInd2 + 1][eqInd] * eqWgt +
-							 decruleMat[ageInd][ftInd][feInd + 1][zInd2 + 1][lkInd2 + 1][eqInd + 1] * (1 - eqWgt)) * (
-										1 - feWgt)
-
-			tempVal1 = tempVal1 * zWgt + tempVal0 * (1 - zWgt)
-
-		interpVal = interpVal * lkWgt + tempVal1 * (1 - lkWgt)
-
-	return interpVal
-
-
-def intrplte7D(decruleMat, ageInd, ftInd, feInd, zInd2, lkInd2, taInd, dInd,
-			   dWgt, taWgt, feWgt, zWgt, lkWgt, feNum, zNum2, lagcapNum):
-	interpVal = ((decruleMat[ageInd][ftInd][feInd][zInd2][lkInd2][taInd][dInd] * dWgt +
-				  decruleMat[ageInd][ftInd][feInd][zInd2][lkInd2][taInd][dInd + 1] * (1 - dWgt)) * taWgt +
-				 (decruleMat[ageInd][ftInd][feInd][zInd2][lkInd2][taInd + 1][dInd] * dWgt +
-				  decruleMat[ageInd][ftInd][feInd][zInd2][lkInd2][taInd + 1][dInd + 1] * (1 - dWgt)) * (
-							 1 - taWgt)) * feWgt
-
-	if feNum > 1:
-		interpVal += ((decruleMat[ageInd][ftInd][feInd + 1][zInd2][lkInd2][taInd][dInd] * dWgt +
-					   decruleMat[ageInd][ftInd][feInd + 1][zInd2][lkInd2][taInd][dInd + 1] * (1 - dWgt)) * taWgt +
-					  (decruleMat[ageInd][ftInd][feInd + 1][zInd2][lkInd2][taInd + 1][dInd] * dWgt +
-					   decruleMat[ageInd][ftInd][feInd + 1][zInd2][lkInd2][taInd + 1][dInd + 1] * (1 - dWgt)) * (
-								  1 - taWgt)) * (1 - feWgt)
-
-	if zNum2 > 1:
-		tempVal0 = ((decruleMat[ageInd][ftInd][feInd][zInd2 + 1][lkInd2][taInd][dInd] * dWgt +
-					 decruleMat[ageInd][ftInd][feInd][zInd2 + 1][lkInd2][taInd][dInd + 1] * (1 - dWgt)) * taWgt +
-					(decruleMat[ageInd][ftInd][feInd][zInd2 + 1][lkInd2][taInd + 1][dInd] * dWgt +
-					 decruleMat[ageInd][ftInd][feInd][zInd2 + 1][lkInd2][taInd + 1][dInd + 1] * (1 - dWgt)) * (
-								1 - taWgt)) * feWgt
-
-		if feNum > 1:
-			tempVal0 += ((decruleMat[ageInd][ftInd][feInd + 1][zInd2 + 1][lkInd2][taInd][dInd] * dWgt +
-						  decruleMat[ageInd][ftInd][feInd + 1][zInd2 + 1][lkInd2][taInd][dInd + 1] * (
-									  1 - dWgt)) * taWgt +
-						 (decruleMat[ageInd][ftInd][feInd + 1][zInd2 + 1][lkInd2][taInd + 1][dInd] * dWgt +
-						  decruleMat[ageInd][ftInd][feInd + 1][zInd2 + 1][lkInd2][taInd + 1][dInd + 1] * (1 - dWgt)) * (
-									 1 - taWgt)) * (1 - feWgt)
-
-		interpVal = interpVal * zWgt + tempVal0 * (1 - zWgt)
-
-	if lagcapNum > 2:
-		tempVal1 = ((decruleMat[ageInd][ftInd][feInd][zInd2][lkInd2 + 1][taInd][dInd] * dWgt +
-					 decruleMat[ageInd][ftInd][feInd][zInd2][lkInd2 + 1][taInd][dInd + 1] * (1 - dWgt)) * taWgt +
-					(decruleMat[ageInd][ftInd][feInd][zInd2][lkInd2 + 1][taInd + 1][dInd] * dWgt +
-					 decruleMat[ageInd][ftInd][feInd][zInd2][lkInd2 + 1][taInd + 1][dInd + 1] * (1 - dWgt)) * (
-								1 - taWgt)) * feWgt
-
-		if feNum > 1:
-			tempVal1 += ((decruleMat[ageInd][ftInd][feInd + 1][zInd2][lkInd2 + 1][taInd][dInd] * dWgt +
-						  decruleMat[ageInd][ftInd][feInd + 1][zInd2][lkInd2 + 1][taInd][dInd + 1] * (
-									  1 - dWgt)) * taWgt +
-						 (decruleMat[ageInd][ftInd][feInd + 1][zInd2][lkInd2 + 1][taInd + 1][dInd] * dWgt +
-						  decruleMat[ageInd][ftInd][feInd + 1][zInd2][lkInd2 + 1][taInd + 1][dInd + 1] * (1 - dWgt)) * (
-									 1 - taWgt)) * (1 - feWgt)
-
-		if zNum2 > 1:
-			tempVal0 = ((decruleMat[ageInd][ftInd][feInd][zInd2 + 1][lkInd2 + 1][taInd][dInd] * dWgt +
-						 decruleMat[ageInd][ftInd][feInd][zInd2 + 1][lkInd2 + 1][taInd][dInd + 1] * (
-									 1 - dWgt)) * taWgt +
-						(decruleMat[ageInd][ftInd][feInd][zInd2 + 1][lkInd2 + 1][taInd + 1][dInd] * dWgt +
-						 decruleMat[ageInd][ftInd][feInd][zInd2 + 1][lkInd2 + 1][taInd + 1][dInd + 1] * (1 - dWgt)) * (
-									1 - taWgt)) * feWgt
-
-			if feNum > 1:
-				tempVal0 += ((decruleMat[ageInd][ftInd][feInd + 1][zInd2 + 1][lkInd2 + 1][taInd][dInd] * dWgt +
-							  decruleMat[ageInd][ftInd][feInd + 1][zInd2 + 1][lkInd2 + 1][taInd][dInd + 1] * (
-										  1 - dWgt)) * taWgt +
-							 (decruleMat[ageInd][ftInd][feInd + 1][zInd2 + 1][lkInd2 + 1][taInd + 1][dInd] * dWgt +
-							  decruleMat[ageInd][ftInd][feInd + 1][zInd2 + 1][lkInd2 + 1][taInd + 1][dInd + 1] * (
-										  1 - dWgt)) * (1 - taWgt)) * (1 - feWgt)
-
-			tempVal1 = tempVal1 * zWgt + tempVal0 * (1 - zWgt)
-
-		interpVal = interpVal * lkWgt + tempVal1 * (1 - lkWgt)
-
-	return interpVal
-
-def simulation(initAges, initYears, initCapital, initTotAssets,
-                 initDebt, farmtypes, feShksVec, feValues, zShksMtx, zValues,
-                 totassetvec, debtvec,  equityvec, cashvec, lagcapvec, FEIsimsMtx, ZsimsMtx, ZIsimsMtx,
-                 asstsimsMtx, dividendsimsMtx, totKsimsMtx, NKratsimsMtx, cashsimsMtx, IRsimsMtx,
-                 debtsimsMtx, NWsimsMtx, fracRepaidsimsMtx, outputsimsMtx,liqDecsimsMtx, agesimsMtx,
-                 expensesimsMtx, liqDecisionMat, fracRepaidMat, bestIntRateFarm, bestCashFarm,
-                 bestDividendFarm, bestKFarm, bestNKratFarm, bestDebtFarm, numSims):
-  """ Timing: at the begining of each period, know total assets, total debt.
-      Next, decide whether to operate.  Exiting farmers is an absorbing state.
-      Finally, pick operating decisions for this period """
-
-  print(f"Rank=0, numSims={numSims}")
-
-  for personInd in range(numSims): # loop for farms
-      age0 = int(initAges[personInd])
-      year0 = int(initYears[personInd]) + 1 # GAUSS indexing
-
-      ftInd = 0
-      if ftNum > 1:
-          ftInd = int(farmtypes[personInd])- 1 # GAUSS indexing
-
-      if ftInd == 0:
-          alpha, gamma, ag2, ag3, gag, agag = prodFnParms(alpha1, gamma1)
-      else:
-          alpha, gamma, ag2, ag3, gag, agag = prodFnParms(alpha2, gamma2)
-
-      feValue = np.exp(feShksVec[personInd])
-      feInd, feWgt = GetLocation(feValues, feValue)
-      if feNum == 1:
-        feWgt = 1
-
-      FEIsimsMtx[0][personInd] = feInd + 1 # GAUSS indexing
-      if feWgt < 0.5:
-          FEIsimsMtx[0][personInd] += 1
-
-      for yearInd in range(year0): # loop of year
-          dividendsimsMtx[yearInd][personInd] = -1e5
-          totKsimsMtx[yearInd][personInd] = -1
-          NKratsimsMtx[yearInd][personInd] = -1
-          IRsimsMtx[yearInd][personInd] = -1
-          NWsimsMtx[yearInd][personInd] = -1e5
-          expensesimsMtx[yearInd][personInd] = -1
-          outputsimsMtx[yearInd][personInd] = -1
-          cashsimsMtx[yearInd][personInd] = -1
-          asstsimsMtx[yearInd][personInd] = -1e5
-          debtsimsMtx[yearInd][personInd] = -1e5
-          fracRepaidsimsMtx[yearInd + 1][personInd] = -1
-          liqDecsimsMtx[yearInd][personInd] = -1
-          agesimsMtx[yearInd][personInd] = -1
-
-          zValue = np.exp(zShksMtx[yearInd][personInd]) # next periods's shock
-          zInd, zWgt = GetLocation(zValues, zValue)
-          ZsimsMtx[yearInd][personInd] = zValue
-          ZIsimsMtx[yearInd][personInd] = zInd + 1 # GAUSS indexing
-          if zWgt < 0.5:
-              ZIsimsMtx[yearInd + 1][personInd] += 1
-
-      age = age0
-      ageInd = age - bornage
-      if ageInd < 0:
-          ageInd = 0
-
-      zValue = np.exp(zShksMtx[year0][personInd])
-      zInd, zWgt = GetLocation(zValues, zValue)
-      zInd2 = 0
-      if zNum2 > 1:
-          zInd2 = zInd
-
-      agesimsMtx[year0][personInd] = float(age)
-      ZsimsMtx[year0][personInd] = zValue
-      ZIsimsMtx[year0][personInd] = zInd + 1 # GAUSS indexing
-      if zWgt < 0.5:
-          ZIsimsMtx[year0][personInd] += 1
-
-      lagCapital = initCapital[personInd]
-      totAssets = initTotAssets[personInd]
-      debt = initDebt[personInd]
-      lkInd, lkWgt = GetLocation(lagcapvec, lagCapital)
-      lkInd2 = 0
-      if lagcapNum > 1:
-          lkInd2 = lkInd
-      taInd, taWgt = GetLocation(totassetvec, totAssets)
-      dInd, dWgt = GetLocation(debtvec, debt)
-      liqDec = 0
-      fracRepaid = 1
-
-      liqDec_dbl = intrplte7D(liqDecisionMat, ageInd, ftInd, feInd, zInd2, lkInd2, taInd, dInd, dWgt, taWgt, feWgt, zWgt, lkWgt, feNum, zNum2, lagcapNum)
-      fracRepaid = intrplte7D(fracRepaidMat, ageInd, ftInd, feInd, zInd2, lkInd2, taInd, dInd, dWgt, taWgt, feWgt, zWgt, lkWgt, feNum, zNum2, lagcapNum)
-      if liqDec_dbl > 0.5:
-          liqDec = 1
-      if fracRepaid > 1:
-          fracRepaid = 1
-      if fracRepaid < 0:
-          fracRepaid = 0
-
-      asstsimsMtx[year0][personInd] = totAssets
-      debtsimsMtx[year0][personInd] = debt
-      fracRepaidsimsMtx[year0][personInd] = fracRepaid
-      liqDecsimsMtx[year0][personInd] = float(liqDec)
-
-      for yearInd in range(year0, timespan + 1):
-          age = age0 + yearInd - year0
-          ageInd = age - bornage
-          if ageInd < 0:
-              ageInd = 0
-          agesimsMtx[yearInd][personInd] = float(age)
-
-          if liqDec == 1:
-              dividendsimsMtx[yearInd][personInd] = -1
-              totKsimsMtx[yearInd][personInd] = -1
-              NKratsimsMtx[yearInd][personInd] = -1
-              IRsimsMtx[yearInd][personInd] = -1
-              NWsimsMtx[yearInd][personInd] = -1
-              expensesimsMtx[yearInd][personInd] = -1
-              outputsimsMtx[yearInd][personInd] = -1
-              cashsimsMtx[yearInd][personInd] = -1
-              if yearInd == timespan:
-                  continue
-
-              asstsimsMtx[yearInd + 1][personInd] = -1e5
-              debtsimsMtx[yearInd + 1][personInd] = -1
-              fracRepaidsimsMtx[yearInd + 1][personInd] = -1
-              liqDecsimsMtx[yearInd + 1][personInd] = 1
-
-              zValue = np.exp(zShksMtx[yearInd + 1][personInd])
-              zInd, zWgt = GetLocation(zValues, zValue)
-              ZsimsMtx[yearInd + 1][personInd] = zValue
-              ZIsimsMtx[yearInd + 1][personInd] = zInd + 1 # GAUSS indexing
-              if zWgt < 0.5:
-                  ZIsimsMtx[yearInd + 1][personInd] += 1
-              continue
-
-          equity = totAssets - fracRepaid * debt
-          eqInd, eqWgt = GetLocation(equityvec, equity)
-
-          totK = intrplte6D(bestKFarm, ageInd, ftInd, feInd, zInd2, lkInd2, eqInd, eqWgt, feWgt, zWgt, lkWgt, feNum, zNum2, lagcapNum)
-          NKrat = intrplte6D(bestNKratFarm, ageInd, ftInd, feInd, zInd2, lkInd2, eqInd, eqWgt, feWgt, zWgt, lkWgt, feNum, zNum2, lagcapNum)
-          intRate = intrplte6D(bestIntRateFarm, ageInd, ftInd, feInd, zInd2, lkInd2, eqInd, eqWgt, feWgt, zWgt, lkWgt, feNum, zNum2, lagcapNum)
-          cash = intrplte6D(bestCashFarm, ageInd, ftInd, feInd, zInd2, lkInd2, eqInd, eqWgt, feWgt, zWgt, lkWgt, feNum, zNum2, lagcapNum)
-          debt = intrplte6D(bestDebtFarm, ageInd, ftInd, feInd, zInd2, lkInd2, eqInd, eqWgt, feWgt, zWgt, lkWgt, feNum, zNum2, lagcapNum)
-
-          if totK < 0:
-              totK = 0
-          if NKrat < 0:
-              NKrat = 0
-          if intRate < bigR:
-              intRate = bigR
-          if cash < 0:
-              cash = 0
-          if debt < 0:
-              debt = 0
-
-          dividend = equity + debt / intRate - totK - cash
-          if dividend < (-c_0 * eqInject):
-              dividend = (-c_0 * eqInject)
-
-          igoods = getBaseIGoods(totK, feValue, gag, agag, ag3, igshift) * NKrat
-          expenses = igoods + fixedcost
-          zValue = np.exp(zShksMtx[yearInd + 1][personInd]) # next period's shock
-          output = feValue * zValue * getBaseRevenues(totK, igoods, gamma, ag2) # output = revenues
-
-          dividendsimsMtx[yearInd][personInd] = dividend
-          totKsimsMtx[yearInd][personInd] = totK
-          NKratsimsMtx[yearInd][personInd] = NKrat
-          NWsimsMtx[yearInd][personInd] = equity
-          expensesimsMtx[yearInd][personInd] = expenses
-          outputsimsMtx[yearInd][personInd] = output
-          IRsimsMtx[yearInd][personInd] = intRate
-          cashsimsMtx[yearInd][personInd] = cash
-
-          if yearInd == timespan:
-              continue
-
-          # now move to t+1 states
-
-          lagCapital = totK
-          totAssets = ((1 - delta + eGK) * totK + output - expenses + cash) / bigG
-          taInd, taWgt = GetLocation(totassetvec, totAssets)
-          dInd, dWgt = GetLocation(debtvec, debt)
-          lkInd, lkWgt = GetLocation(lagcapvec, lagCapital)
-          lkInd2 = 0
-          if lagcapNum > 1:
-              lkInd2 = lkInd
-
-          zInd, zWgt = GetLocation(zValues, zValue)
-          zInd2 = 0
-          if zNum2 > 1:
-              zInd2 = zInd
-          ZsimsMtx[yearInd + 1][personInd] = zValue
-          ZIsimsMtx[yearInd + 1][personInd] = zInd # + 1 GAUSS indexing
-          if zWgt < 0.5:
-              ZIsimsMtx[yearInd + 1][personInd] += 1
-          FEIsimsMtx[yearInd + 1][personInd] = FEIsimsMtx[0][personInd]
-
-          liqDec = 0
-          fracRepaid = 1
-
-          liqDec_dbl = intrplte7D(liqDecisionMat, ageInd + 1, ftInd, feInd, zInd2, lkInd2, taInd, dInd, dWgt, taWgt, feWgt, zWgt, lkWgt, feNum, zNum2, lagcapNum)
-          fracRepaid = intrplte7D(fracRepaidMat, ageInd + 1, ftInd, feInd, zInd2, lkInd2, taInd, dInd, dWgt, taWgt, feWgt, zWgt, lkWgt, feNum, zNum2, lagcapNum)
-
-          if liqDec_dbl > 0.5:
-              liqDec = 1
-          if fracRepaid > 1:
-              fracRepaid = 1
-          if fracRepaid < 0:
-              fracRepaid = 0
-
-          asstsimsMtx[yearInd + 1][personInd] = totAssets
-          debtsimsMtx[yearInd + 1][personInd] = debt
-          fracRepaidsimsMtx[yearInd + 1][personInd] = fracRepaid
-          liqDecsimsMtx[yearInd + 1][personInd] = float(liqDec)
-
-simulation(initAges, initYears, initCapital, initTotAssets,
-                 initDebt, FTypesims, feShks, feValues, zShksMtx, zValues,
-                 totassetvec, debtvec,  equityvec, cashvec, lagcapvec, FEIsimsMtx, ZsimsMtx, ZIsimsMtx,
-                 asstsimsMtx, dividendsimsMtx, totKsimsMtx, NKratsimsMtx, cashsimsMtx, IRsimsMtx,
-                 debtsimsMtx, NWsimsMtx, fracRepaidsimsMtx, outputsimsMtx,liqDecsimsMtx, agesimsMtx,
-                 expensesimsMtx, liqDecisionMat, fracRepaidMat, bestIntRateFarm, bestCashFarm,
-                 bestDividendFarm, bestKFarm, bestNKratFarm, bestDebtFarm, numSims)
-
-def save_processed_data_txt(data, filename, savepath):
-    """
-    Save processed data to a text file.
-
-    Parameters:
-    data: The data to save (numpy array).
-    filename: The name of the file.
-    savepath: The path to the directory where the file will be saved.
-    """
-    filepath = os.path.join(savepath, filename)
-    if isinstance(data, np.ndarray):
-        np.savetxt(filepath, data)
-    else:
-        raise ValueError("Data must be a numpy array.")
-    print(f"Saved {filename} to {savepath}")
-
-save_processed_data_txt(FEIsimsMtx, "FEindxS.txt", iopath)
-save_processed_data_txt(ZsimsMtx, "ZValsS.txt", iopath)
-save_processed_data_txt(ZIsimsMtx, "ZindxS.txt", iopath)
-save_processed_data_txt(asstsimsMtx, "assetsS.txt", iopath)
-save_processed_data_txt(debtsimsMtx, "debtS.txt", iopath)
-save_processed_data_txt(fracRepaidsimsMtx, "fracRPS.txt", iopath)
-save_processed_data_txt(liqDecsimsMtx, "liqDecS.txt", iopath)
-save_processed_data_txt(agesimsMtx, "ageS.txt", iopath)
-save_processed_data_txt(dividendsimsMtx, "divS.txt", iopath)
-save_processed_data_txt(totKsimsMtx, "totKS.txt", iopath)
-save_processed_data_txt(NKratsimsMtx, "NKratos.txt", iopath)
-save_processed_data_txt(cashsimsMtx, "cashS.txt", iopath)
-save_processed_data_txt(IRsimsMtx, "intRateS.txt", iopath)
-save_processed_data_txt(NWsimsMtx, "equityS.txt", iopath)
-save_processed_data_txt(outputsimsMtx, "outputS.txt", iopath)
-save_processed_data_txt(expensesimsMtx, "expenseS.txt", iopath)
+def main():
+    recsize         = (lifespan+1)*assetNum
+    valfFuncWPtr    = np.zeros(recsize) # np.nan + np.zeros(recsize)
+    recsize         = lifespan*assetNum
+    bestCWPtr       = np.zeros(recsize) # np.nan + np.zeros(recsize) # optimal consumption choices
+    bestNPIWPtr     = np.zeros(recsize) # np.nan + np.zeros(recsize) # index number of optimal time-t+1 assets
+
+    valfuncWork     = valfFuncWPtr.reshape(lifespan+1,assetNum)
+    valfuncWork[lifespan] = bequestUM
+    bestCWork       = bestCWPtr.reshape(lifespan,assetNum)
+    bestNPIWork     = bestNPIWPtr.reshape(lifespan,assetNum)
+
+    valfuncWork, bestCWork, bestNPIWork = GetRulesWorker(assetvec, wageprofilevec, valfuncWork, bestCWork, bestNPIWork)
+
+    # Calculate mapping from TotAssets x Lagged Capital x Debt to post-Liquidation Net Worth/Assets
+    # These are age-invariant, financial calculations
+
+    postliqAssets = np.zeros((lagcapNum, totassetNum, debtNum))
+    postliqNetWorth = np.zeros((lagcapNum, totassetNum, debtNum))
+    postliqNWIndex = np.zeros((lagcapNum, totassetNum, debtNum))
+    retNWIndex       = np.zeros((lagcapNum, totassetNum, debtNum)) # This one really belong to getLiqDecision
+
+    postliqAssets, postliqNetWorth, postliqNWIndex = getliqIndex(assetvec, totassetvec, lagcapvec, debtvec, postliqAssets, postliqNetWorth, postliqNWIndex, SLfrac, _lambda)
+
+    liqDecisionMat = np.zeros((lifespan + 1, ftNum, feNum, zNum2, lagcapNum, totassetNum, debtNum))
+    valfuncMat = np.zeros((lifespan + 1, ftNum, feNum, zNum2, lagcapNum, totassetNum, debtNum))
+    fracRepaidMat = np.zeros((lifespan + 1, ftNum, feNum, zNum2, lagcapNum, totassetNum, debtNum))
+    valfuncFarm = np.zeros((lifespan, ftNum, feNum, zNum2, lagcapNum, equityNum))
+    bestIntRateFarm = np.zeros((lifespan, ftNum, feNum, zNum2, lagcapNum, equityNum))
+    bestKIndexFarm = np.zeros((lifespan, ftNum, feNum, zNum2, lagcapNum, equityNum), dtype=int)
+    bestKFarm = np.zeros((lifespan, ftNum, feNum, zNum2, lagcapNum, equityNum))
+    bestNKratIndexFarm = np.zeros((lifespan, ftNum, feNum, zNum2, lagcapNum, equityNum), dtype=int)
+    bestNKratFarm = np.zeros((lifespan, ftNum, feNum, zNum2, lagcapNum, equityNum))
+    bestCashIndexFarm = np.zeros((lifespan, ftNum, feNum, zNum2, lagcapNum, equityNum), dtype=int)
+    bestCashFarm = np.zeros((lifespan, ftNum, feNum, zNum2, lagcapNum, equityNum))
+    bestDividendFarm = np.zeros((lifespan, ftNum, feNum, zNum2, lagcapNum, equityNum))
+    bestDebtIndexFarm = np.zeros((lifespan, ftNum, feNum, zNum2, lagcapNum, equityNum), dtype=int)
+    bestDebtFarm = np.zeros((lifespan, ftNum, feNum, zNum2, lagcapNum, equityNum))
+    bestNPTAWeightFarm = np.zeros((lifespan, ftNum, feNum, zNum2, lagcapNum, equityNum, zNum))
+    bestNPTAIndexFarm = np.zeros((lifespan, ftNum, feNum, zNum2, lagcapNum, equityNum, zNum), dtype=int)
+
+    NPtotassetWeight = np.zeros((capitalNum, ftNum, feNum, NKratioNum, cashNum, zNum))
+    NPtotassetIndex  = np.zeros((capitalNum, ftNum, feNum, NKratioNum, cashNum, zNum))
+    goodGridPoint    = np.zeros((capitalNum, ftNum, feNum, NKratioNum, cashNum))
+    NPtotassetWeight, NPtotassetIndex, goodGridPoint = getNPtotAssets(capitalvec, capitalNum, NKratiovec, cashvec, feValues, zValues,
+                                                totassetvec, NPtotassetWeight, NPtotassetIndex, goodGridPoint)
+
+
+    retNWIndex, liqDecisionMat, valfuncMat, fracRepaidMat = getFinalLiq(totassetvec, lagcapvec, debtvec, assetvec,
+                                                          retNWIndex, liqDecisionMat, valfuncMat, fracRepaidMat)
+
+    # We structure this into tuples so that, here at the end, we can package the entire thing into *FAST*
+    # To put in tInd, it just needs to go at either the front or the back of the argument list
+
+    # get operating decision
+    getOperatingDec_input = equityAssignments, equityvec, capitalvec, lagcapvec, debtvec, NKratiovec, cashvec, zTransmtx, CLKindvec, CLKwgtvec, goodGridPoint, NPtotassetWeight, NPtotassetIndex, valfuncMat, fracRepaidMat, valfuncFarm, bestIntRateFarm, bestKIndexFarm, bestNKratIndexFarm, bestCashIndexFarm, bestDividendFarm ,bestDebtIndexFarm, bestNPTAWeightFarm, bestNPTAIndexFarm, bestKFarm, bestNKratFarm, bestDebtFarm, bestCashFarm
+    getOperatingDec_output = valfuncFarm, bestCashIndexFarm, bestDebtIndexFarm, bestIntRateFarm, bestKIndexFarm, bestNKratIndexFarm, bestDividendFarm, bestKFarm, bestNKratFarm, bestDebtFarm, bestCashFarm
+
+    # liquidity farm
+    getliqDecision_input = totassetvec, debtvec, equityvec, postliqAssets, postliqNWIndex, valfuncWork, valfuncFarm, liqDecisionMat, valfuncMat, fracRepaidMat
+    getLiqDecision_output = liqDecisionMat, fracRepaidMat, valfuncMat
+    output_final_op, output_final_liq = main_loop(getOperatingDec_input, getOperatingDec_output, getliqDecision_input, getLiqDecision_output)
+
+    np.save(f"{rootdir}VFI_output/feValues.npy", feValues)
+    np.save(f"{rootdir}VFI_output/zValues.npy", zValues)
+    np.save(f"{rootdir}VFI_output/totassetvec.npy", totassetvec)
+    np.save(f"{rootdir}VFI_output/debtvec.npy", debtvec)
+    np.save(f"{rootdir}VFI_output/equityvec.npy", equityvec)
+    np.save(f"{rootdir}VFI_output/cashvec.npy", cashvec)
+    np.save(f"{rootdir}VFI_output/lagcapvec.npy", lagcapvec)
+    np.save(f"{rootdir}VFI_output/liqDecisionMat.npy", liqDecisionMat)
+    np.save(f"{rootdir}VFI_output/fracRepaidMat.npy", fracRepaidMat)
+    np.save(f"{rootdir}VFI_output/bestIntRateFarm.npy", bestIntRateFarm)
+    np.save(f"{rootdir}VFI_output/bestCashFarm.npy", bestCashFarm)
+    np.save(f"{rootdir}VFI_output/bestDividendFarm.npy", bestDividendFarm)
+    np.save(f"{rootdir}VFI_output/bestKFarm.npy", bestKFarm)
+    np.save(f"{rootdir}VFI_output/bestNKratFarm.npy", bestNKratFarm)
+    np.save(f"{rootdir}VFI_output/bestDebtFarm.npy", bestDebtFarm) 
+
+if __name__ == "__main__":
+    main()

@@ -305,9 +305,9 @@ int main(int argc, char *argv[])
    }
    else if (switchMac==0) 
    {
-      strcpy(rootdir, "C:\\Users\\zcl375\\Dynammic-Programming\\iofiles\\");
-      strcpy(outputdir, "C:\\Users\\zcl375\\Dynammic-Programming\\output\\");
-      strcpy(datadir, "C:\\Users\\zcl375\\Dynammic-Programming\\data\\");
+      strcpy(rootdir, "C:\\Users\\zcl375\\Desktop\\Dynammic-Programming\\iofiles\\");
+      strcpy(outputdir, "C:\\Users\\zcl375\\Desktop\\Dynammic-Programming\\output\\");
+      strcpy(datadir, "C:\\Users\\zcl375\\Desktop\\Dynammic-Programming\\data\\");
    }
   
    GaussJobPtr = readDoubleList(strcat(strcpy(fullpath,rootdir),"job.txt"));
@@ -413,6 +413,8 @@ int main(int argc, char *argv[])
    bestCWork       = SetUp2DMat(bestCWPtr.data,lifespan,assetNum);
    bestNPIWork     = SetUp2DMat(bestNPIWPtr.data,lifespan,assetNum);
 
+
+
    spm2 = ((double) assetNum)/ ((double) size);
    statespermachine = (int) ceil(spm2);
    spm2 = ((double) numSims)/ ((double) size);
@@ -515,7 +517,7 @@ int main(int argc, char *argv[])
 
    equityAssignments = getAssignmentVec(equityNum, size);
    
-   for (tInd = (lifespan-1); tInd>= 0; tInd--)
+   for (tInd = (lifespan- 1); tInd>= 0; tInd--) // (lifespan - 1) OG CONDITIION
    {  
       printf("tInd %5d\n", tInd);
          
@@ -645,16 +647,20 @@ int main(int argc, char *argv[])
    NWsimsMtx         = SetUp2DMat(NWsimsPtr.data,timespan+1,numSims);
    expensesimsMtx    = SetUp2DMat(expensesimsPtr.data,timespan+1,numSims);
    outputsimsMtx     = SetUp2DMat(outputsimsPtr.data,timespan+1,numSims);
-
+   /*
    #pragma omp parallel private(iSimmin,iSimmax,rank)
    {
       rank = omp_get_thread_num();
       iSimmin = rank*simspermachine;
       iSimmax = (rank+1)*simspermachine;
       if (iSimmax > numSims) { iSimmax = numSims; }
-//      iSimmin = 0;
-//      iSimmax = numSims;
+      
+      iSimmin = 0;      // Disable parallel processing
+      iSimmax = numSims;   // Disable parallel processing
+   }*/
 
+      iSimmin = 0;      // Disable parallel processing
+      iSimmax = numSims;
       simulation(initAgesPtr.data, initYearsPtr.data, initCapitalPtr.data, initTotAssetsPtr.data, 
                  initDebtPtr.data, FTypesimsPtr.data, feShksPtr.data, feValues, zShksMtx, zValues, 
                  totassetvec, debtvec,  equityvec, cashvec, lagcapvec, FEIsimsMtx, ZsimsMtx, ZIsimsMtx, 
@@ -662,7 +668,7 @@ int main(int argc, char *argv[])
                  debtsimsMtx, NWsimsMtx, fracRepaidsimsMtx, outputsimsMtx,liqDecsimsMtx, agesimsMtx, 
                  expensesimsMtx, liqDecisionMat, fracRepaidMat, bestIntRateFarm, bestCashFarm, 
                  bestDividendFarm, bestKFarm, bestNKratFarm, bestDebtFarm, iSimmin, iSimmax);
-   }
+   
 
    if (printOn>0)
    {
@@ -673,6 +679,7 @@ int main(int argc, char *argv[])
                    NKratsimsMtx, cashsimsMtx, IRsimsMtx, debtsimsMtx, NWsimsMtx, fracRepaidsimsMtx,
                    outputsimsMtx, liqDecsimsMtx, agesimsMtx, expensesimsMtx);
       }
+   
       writeGMatrixToFile(strcat(strcpy(fullpath, rootdir), "FEindxS.txt"), &FEIsimsPtr);
       writeGMatrixToFile(strcat(strcpy(fullpath, rootdir), "ZValsS.txt"), &ZsimsPtr);
       writeGMatrixToFile(strcat(strcpy(fullpath, rootdir), "ZindxS.txt"), &ZIsimsPtr);
