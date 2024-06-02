@@ -1023,7 +1023,7 @@ def main_loop(input_op, output_op, input_liq, output_liq) :
 
   return output_op, output_liq
 
-def main():
+def solve_model():
     recsize         = (lifespan+1)*assetNum
     valfFuncWPtr    = np.zeros(recsize) # np.nan + np.zeros(recsize)
     recsize         = lifespan*assetNum
@@ -1102,5 +1102,6 @@ def main():
     np.save(f"{rootdir}VFI_output/bestNKratFarm.npy", bestNKratFarm)
     np.save(f"{rootdir}VFI_output/bestDebtFarm.npy", bestDebtFarm) 
 
+
 if __name__ == "__main__":
-    main()
+    solve_model()
