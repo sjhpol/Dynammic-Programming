@@ -1,5 +1,5 @@
 # Other imports
-from variables import *
+from settings import *
 from typing import TypeAlias, List, Tuple, Final # Try to statically type everything so we know wtf is going on.
 import numpy as np # brug numpy så meget som muligt.
 import math
@@ -1086,21 +1086,21 @@ def solve_model():
     getLiqDecision_output = liqDecisionMat, fracRepaidMat, valfuncMat
     output_final_op, output_final_liq = main_loop(getOperatingDec_input, getOperatingDec_output, getliqDecision_input, getLiqDecision_output)
 
-    np.save(f"{rootdir}VFI_output/feValues.npy", feValues)
-    np.save(f"{rootdir}VFI_output/zValues.npy", zValues)
-    np.save(f"{rootdir}VFI_output/totassetvec.npy", totassetvec)
-    np.save(f"{rootdir}VFI_output/debtvec.npy", debtvec)
-    np.save(f"{rootdir}VFI_output/equityvec.npy", equityvec)
-    np.save(f"{rootdir}VFI_output/cashvec.npy", cashvec)
-    np.save(f"{rootdir}VFI_output/lagcapvec.npy", lagcapvec)
-    np.save(f"{rootdir}VFI_output/liqDecisionMat.npy", liqDecisionMat)
-    np.save(f"{rootdir}VFI_output/fracRepaidMat.npy", fracRepaidMat)
-    np.save(f"{rootdir}VFI_output/bestIntRateFarm.npy", bestIntRateFarm)
-    np.save(f"{rootdir}VFI_output/bestCashFarm.npy", bestCashFarm)
-    np.save(f"{rootdir}VFI_output/bestDividendFarm.npy", bestDividendFarm)
-    np.save(f"{rootdir}VFI_output/bestKFarm.npy", bestKFarm)
-    np.save(f"{rootdir}VFI_output/bestNKratFarm.npy", bestNKratFarm)
-    np.save(f"{rootdir}VFI_output/bestDebtFarm.npy", bestDebtFarm) 
+    np.save("VFI_output/feValues.npy", feValues)
+    np.save("VFI_output/zValues.npy", zValues)
+    np.save("VFI_output/totassetvec.npy", totassetvec)
+    np.save("VFI_output/debtvec.npy", debtvec)
+    np.save("VFI_output/equityvec.npy", equityvec)
+    np.save("VFI_output/cashvec.npy", cashvec)
+    np.save("VFI_output/lagcapvec.npy", lagcapvec)
+    np.save("VFI_output/liqDecisionMat.npy", liqDecisionMat)
+    np.save("VFI_output/fracRepaidMat.npy", fracRepaidMat)
+    np.save("VFI_output/bestIntRateFarm.npy", bestIntRateFarm)
+    np.save("VFI_output/bestCashFarm.npy", bestCashFarm)
+    np.save("VFI_output/bestDividendFarm.npy", bestDividendFarm)
+    np.save("VFI_output/bestKFarm.npy", bestKFarm)
+    np.save("VFI_output/bestNKratFarm.npy", bestNKratFarm)
+    np.save("VFI_output/bestDebtFarm.npy", bestDebtFarm)
 
 
 if __name__ == "__main__":

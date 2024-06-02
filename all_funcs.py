@@ -1,5 +1,5 @@
 from markch import markch
-from variables import *
+from settings import *
 from functions import logitrv, logit
 from babyfarm18b import solve_model
 from Simulation import run_sim
@@ -13,6 +13,7 @@ from scipy.stats import norm
 import matplotlib.pyplot as plt
 
 from subprocess import call
+
 
 def getchrt(data, cohorts_j):
 	rn = len(data)
@@ -1654,10 +1655,7 @@ def onerun(parmvec, fixvals, betamax, linprefs, nobeq, w_0, bigR, numFTypes, ina
 	k_0 = k_0[randrows]
 	optNK = optNK[randrows]
 
-	# Stupid hack!
-	job = np.array((1.0))
-
-	# Save intermediate results, replace `save_path` with actual save logic if needed
+	# Save intermediate results
 	#np.savetxt(f'{iopath}job.txt', job)
 	np.savetxt(f'{iopath}prefparms.txt', pref_parms)
 	np.savetxt(f'{iopath}finparms.txt', fin_parms)
@@ -1666,13 +1664,9 @@ def onerun(parmvec, fixvals, betamax, linprefs, nobeq, w_0, bigR, numFTypes, ina
 	# np.savetxt(f'{iopath}zshks.txt', zshks)
 	# np.savetxt(f'{iopath}feshks.txt', feshks)
 
-	### TODO: HERE THEY CALL THE C PROGRAM
-	## Add the python version of the C
-	# execret = exec(rulecall, "")  # Ensure `exec_rulecall` is defined
 	solve_model()  # Solve the model with VFI
 	run_sim() 	# Run the simulations
 
-	## WE NEED TO WAIT UNTIL THIS IS DONE AS WE NEED FILES FROM THE C CODE
 	# Load simulations
 	(ageSim, assetSim, cashSim, debtSim, divSim, dvgSim, eqinjSim, goteqiSim, equitySim, expenseSim, fracRPSim,
 	 intRateSim, liqDecSim, NKratioSim, outputSim, totKSim, ZvalSim, aliveSim, ialiveSim, dvgaliveSim,
@@ -1879,7 +1873,6 @@ def onerun_c(parmvec, fixvals, betamax, linprefs, nobeq, w_0, bigR, numFTypes, i
 	print(lbl[-1], criter)
 
 	return criter
-
 
 
 def removeFE(datamat_j, obsmat_j):

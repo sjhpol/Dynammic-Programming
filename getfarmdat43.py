@@ -10,7 +10,7 @@ from scipy.stats import norm
 from simcrit41 import getchrt, getcorrs, getqunts, tauch, FSquant, makepvecs
 from markch import markch
 from utility_functions import load_file, removeFE # we move this out to resolve a circular import.
-from variables import *
+from settings import *
 from scipy.interpolate import interp1d
 #from babyfarm42b_cash import parmvec
 import matplotlib.pyplot as plt

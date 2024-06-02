@@ -1,5 +1,5 @@
 import numpy as np
-from variables import *
+from settings import *
 from scipy.stats import norm
 from functions import logitrv, logit
 from utility_functions import load_file, removeFE

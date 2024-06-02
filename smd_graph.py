@@ -1,8 +1,7 @@
-import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm
 
-from variables import *
+from settings import *
 from functions import logitrv
 
 from all_funcs import loaddat, initdist, datasetup, getgrids, makepvecs, onerun_c
@@ -35,9 +34,6 @@ np.savetxt(f'{iopath}Kstate.txt', Kstate)
 np.savetxt(f'{iopath}lagKstate.txt', lagKstate)
 np.savetxt(f'{iopath}NKState.txt', NKState)
 np.savetxt(f'{iopath}Cstate.txt', Cstate)
-
-	# Order = (1) baseline; (2) chi = 0; (3) psi = 0; (4) nu = 0; (5) nu = 0.25; (6) lam = 0.175; (7) chi=0 + lam=0.175; (8) w = 30;
-# (9) no renegotiation; (10) herd-size weighted; (11) herd-size weighted, mean capital target
 
 # Baseline parameters
 bta = logitrv(np.array([0.972874])/betamax)
@@ -120,7 +116,7 @@ TFPaggshks, TFP_FE, TFPaggeffs, tkqntdat, DAqntdat, CAqntdat, nkqntdat, gikqntda
 
 beta_nu = False
 chi_lambda = False
-plot = True
+plot = False
 
 if beta_nu:
 	# Make grid

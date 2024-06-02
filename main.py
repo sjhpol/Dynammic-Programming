@@ -1,11 +1,14 @@
-import os
 import pandas as pd
 import json
 
-from variables import *
+from settings import *
 from functions import logitrv
 
 from all_funcs import loaddat, initdist, datasetup, getgrids, makepvecs, onerun, graphs, comp_stats
+from Simulation import run_sim
+from babyfarm18b import solve_model
+
+from scipy.optimize import minimize
 
 graph_time = False
 comp_time = False
@@ -38,9 +41,6 @@ np.savetxt(f'{iopath}Kstate.txt', Kstate)
 np.savetxt(f'{iopath}lagKstate.txt', lagKstate)
 np.savetxt(f'{iopath}NKState.txt', NKState)
 np.savetxt(f'{iopath}Cstate.txt', Cstate)
-
-	# Order = (1) baseline; (2) chi = 0; (3) psi = 0; (4) nu = 0; (5) nu = 0.25; (6) lam = 0.175; (7) chi=0 + lam=0.175; (8) w = 30;
-# (9) no renegotiation; (10) herd-size weighted; (11) herd-size weighted, mean capital target
 
 # Baseline parameters
 bta = logitrv(np.array([0.972874])/betamax)
@@ -124,21 +124,31 @@ TFPaggshks, TFP_FE, TFPaggeffs, tkqntdat, DAqntdat, CAqntdat, nkqntdat, gikqntda
 			  												dividends, divgrowth, LTKratio, debtasst, nkratio, gikratio,
 			    											CAratio, ykratio, dumdwgts, avgage)
 
-# datadscr her. Den laver graphs! (og sorterer med TFP, men det kan vi tage senere).
-# (data describe)
-
-# getaggrph
-# get aggregate graphs her! Laver også graphs
 
 numparms = parmvec.shape[0]
 fixvals = parmvec
-zerovec = 1 					# Note, that this becomes a vector later <_<. Also never has zeroes
-onerun(parmvec, fixvals, betamax, linprefs, nobeq, w_0, bigR, numFTypes, inadaU, nonshft, noDScost, nofcost,
+zerovec = 1
+
+res = minimize(onerun, x0=parmvec, args=(fixvals, betamax, linprefs, nobeq, w_0, bigR, numFTypes, inadaU, nonshft, noDScost, nofcost,
 		  	nocolcnst, prnres, noReneg, finparms0, idioshks, randrows,
 		   rloutput, totcap, intgoods, obsmat,
 		   farmtype, av_cows, famsize, datawgts, chrttype, iobsmat,
 		   dvgobsmat, dividends, divgrowth, LTKratio, debtasst, nkratio,
-		   gikratio, CAratio, ykratio, dumdwgts, numsims, avgage)
+		   gikratio, CAratio, ykratio, dumdwgts, numsims, avgage),
+			   options={'maxiter': 10})
+
+
+# numparms = parmvec.shape[0]
+# fixvals = parmvec
+# zerovec = 1 					# Note, that this becomes a vector later <_<. Also never has zeroes
+# onerun(parmvec, fixvals, betamax, linprefs, nobeq, w_0, bigR, numFTypes, inadaU, nonshft, noDScost, nofcost,
+# 		  	nocolcnst, prnres, noReneg, finparms0, idioshks, randrows,
+# 		   rloutput, totcap, intgoods, obsmat,
+# 		   farmtype, av_cows, famsize, datawgts, chrttype, iobsmat,
+# 		   dvgobsmat, dividends, divgrowth, LTKratio, debtasst, nkratio,
+# 		   gikratio, CAratio, ykratio, dumdwgts, numsims, avgage)
+#
+
 
 if graph_time:
 
@@ -155,18 +165,26 @@ if comp_time:
 
 	# Change in bequest tax => change in babyfarm18b.py to 0.15
 	if beq:
+		solve_model()
+		run_sim()
 		comp_stats('beq', fcost, gam, ag2, nshft, k_0, optNK, TFP_FE, randrows, numsims)
 
 	# Change in lambda: change above in lam variable, set it to 1E-10
 	if l_:
+		solve_model()
+		run_sim()
 		comp_stats('lambda', fcost, gam, ag2, nshft, k_0, optNK, TFP_FE, randrows, numsims)
 
 	# Change in chi: change above in chi variable, set it to 1E-10
 	if chi_:
+		solve_model()
+		run_sim()
 		comp_stats('chi', fcost, gam, ag2, nshft, k_0, optNK, TFP_FE, randrows, numsims)
 
 	# Change in lambda and chi: set both to 1E-10
 	if l_ and chi_:
+		solve_model()
+		run_sim()
 		comp_stats('chi_lambda', fcost, gam, ag2, nshft, k_0, optNK, TFP_FE, randrows, numsims)
 
 	def load_comp():

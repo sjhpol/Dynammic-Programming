@@ -1,26 +1,27 @@
 import numpy
 
-from variables import *
+from settings import *
 
 from babyfarm18b import prodFnParms, numSims, ftNum, alpha1, gamma1, GetLocation, alpha2, gamma2, feNum, zNum2, lagcapNum, c_0, eqInject, getBaseIGoods, igshift, fixedcost, getBaseRevenues, delta, eGK
 
+
 def run_sim():
 
-	feValues = np.load(VFI_path + "feValues.npy")
-	zValues = np.load(VFI_path + "zValues.npy")
-	totassetvec = np.load(VFI_path + "totassetvec.npy")
-	debtvec = np.load(VFI_path + "debtvec.npy")
-	equityvec = np.load(VFI_path + "equityvec.npy")
-	cashvec = np.load(VFI_path + "cashvec.npy")
-	lagcapvec = np.load(VFI_path + "lagcapvec.npy")
-	liqDecisionMat = np.load(VFI_path + "liqDecisionMat.npy")
-	fracRepaidMat = np.load(VFI_path + "fracRepaidMat.npy")
-	bestIntRateFarm = np.load(VFI_path + "bestIntRateFarm.npy")
-	bestCashFarm = np.load(VFI_path + "bestCashFarm.npy")
-	bestDividendFarm = np.load(VFI_path + "bestDividendFarm.npy")
-	bestKFarm = np.load(VFI_path + "bestKFarm.npy")
-	bestNKratFarm = np.load(VFI_path + "bestNKratFarm.npy")
-	bestDebtFarm = np.load(VFI_path + "bestDebtFarm.npy")
+	feValues = np.load("VFI_output/feValues.npy")
+	zValues = np.load("VFI_output/zValues.npy")
+	totassetvec = np.load("VFI_output/totassetvec.npy")
+	debtvec = np.load("VFI_output/debtvec.npy")
+	equityvec = np.load("VFI_output/equityvec.npy")
+	cashvec = np.load("VFI_output/cashvec.npy")
+	lagcapvec = np.load("VFI_output/lagcapvec.npy")
+	liqDecisionMat = np.load("VFI_output/liqDecisionMat.npy")
+	fracRepaidMat = np.load("VFI_output/fracRepaidMat.npy")
+	bestIntRateFarm = np.load("VFI_output/bestIntRateFarm.npy")
+	bestCashFarm = np.load("VFI_output/bestCashFarm.npy")
+	bestDividendFarm = np.load("VFI_output/bestDividendFarm.npy")
+	bestKFarm = np.load("VFI_output/bestKFarm.npy")
+	bestNKratFarm = np.load("VFI_output/bestNKratFarm.npy")
+	bestDebtFarm = np.load("VFI_output/bestDebtFarm.npy")
 
 
 	# Load the simulation files using np.loadtxt
@@ -190,282 +191,209 @@ def run_sim():
 					 debtsimsMtx, NWsimsMtx, fracRepaidsimsMtx, outputsimsMtx,liqDecsimsMtx, agesimsMtx,
 					 expensesimsMtx, liqDecisionMat, fracRepaidMat, bestIntRateFarm, bestCashFarm,
 					 bestDividendFarm, bestKFarm, bestNKratFarm, bestDebtFarm, numSims):
-	  """ Timing: at the begining of each period, know total assets, total debt.
+		""" Timing: at the begining of each period, know total assets, total debt.
 		  Next, decide whether to operate.  Exiting farmers is an absorbing state.
 		  Finally, pick operating decisions for this period """
 
-	  print(f"Rank=0, numSims={numSims}")
+		print(f"Rank=0, numSims={numSims}")
 
-	  for personInd in range(numSims): # loop for farms
-		  age0 = int(initAges[personInd])
-		  year0 = int(initYears[personInd]) - 1 # GAUSS indexing
+		for personInd in range(numSims): # loop for farms
+			age0 = int(initAges[personInd])
+			year0 = int(initYears[personInd]) - 1 # GAUSS indexing
 
-		  ftInd = 0
-		  if ftNum > 1:
-			  ftInd = int(farmtypes[personInd]) - 1 # GAUSS indexing
+			ftInd = 0
+			if ftNum > 1:
+				ftInd = int(farmtypes[personInd]) - 1 # GAUSS indexing
 
-		  if ftInd == 0:
-			  alpha, gamma, ag2, ag3, gag, agag = prodFnParms(alpha1, gamma1)
-		  else:
-			  alpha, gamma, ag2, ag3, gag, agag = prodFnParms(alpha2, gamma2)
+			if ftInd == 0:
+				alpha, gamma, ag2, ag3, gag, agag = prodFnParms(alpha1, gamma1)
+			else:
+				alpha, gamma, ag2, ag3, gag, agag = prodFnParms(alpha2, gamma2)
 
-		  feValue = np.exp(feShksVec[personInd])
-		  feInd, feWgt = GetLocation(feValues, feValue)
-		  if feNum == 1:
-			feWgt = 1
+			feValue = np.exp(feShksVec[personInd])
+			feInd, feWgt = GetLocation(feValues, feValue)
+			if feNum == 1:
+				feWgt = 1
 
-		  FEIsimsMtx[0][personInd] = feInd + 1 # GAUSS indexing                             # Float?
-		  if feWgt < 0.5:
-			  FEIsimsMtx[0][personInd] += 1
+			FEIsimsMtx[0][personInd] = feInd + 1 # GAUSS indexing                             # Float?
+			if feWgt < 0.5:
+				FEIsimsMtx[0][personInd] += 1
 
-<<<<<<< HEAD
-      lagCapital = initCapital[personInd]
-      totAssets = initTotAssets[personInd]
-      debt = initDebt[personInd]
-      lkInd, lkWgt = GetLocation(lagcapvec, lagCapital)
-      lkWgt = 0
-      lkInd2 = 0
-      if lagcapNum > 1:
-          lkInd2 = lkInd
-      taInd, taWgt = GetLocation(totassetvec, totAssets)
-      dInd, dWgt = GetLocation(debtvec, debt)
-      liqDec = 0
-      fracRepaid = 1
-=======
-		  for yearInd in range(year0): # loop of year
-			  dividendsimsMtx[yearInd][personInd] = -1e5
-			  totKsimsMtx[yearInd][personInd] = -1
-			  NKratsimsMtx[yearInd][personInd] = -1
-			  IRsimsMtx[yearInd][personInd] = -1
-			  NWsimsMtx[yearInd][personInd] = -1e5
-			  expensesimsMtx[yearInd][personInd] = -1
-			  outputsimsMtx[yearInd][personInd] = -1
-			  cashsimsMtx[yearInd][personInd] = -1
-			  asstsimsMtx[yearInd][personInd] = -1e5
-			  debtsimsMtx[yearInd][personInd] = -1e5
-			  fracRepaidsimsMtx[yearInd + 1][personInd] = -1
-			  liqDecsimsMtx[yearInd][personInd] = -1
-			  agesimsMtx[yearInd][personInd] = -1
->>>>>>> 03784f322ce9f41095485bb6d1d73cfbb0c432ec
+			for yearInd in range(year0): # loop of year
+				dividendsimsMtx[yearInd][personInd] = -1e5
+				totKsimsMtx[yearInd][personInd] = -1
+				NKratsimsMtx[yearInd][personInd] = -1
+				IRsimsMtx[yearInd][personInd] = -1
+				NWsimsMtx[yearInd][personInd] = -1e5
+				expensesimsMtx[yearInd][personInd] = -1
+				outputsimsMtx[yearInd][personInd] = -1
+				cashsimsMtx[yearInd][personInd] = -1
+				asstsimsMtx[yearInd][personInd] = -1e5
+				debtsimsMtx[yearInd][personInd] = -1e5
+				fracRepaidsimsMtx[yearInd + 1][personInd] = -1
+				liqDecsimsMtx[yearInd][personInd] = -1
+				agesimsMtx[yearInd][personInd] = -1
 
-			  zValue = np.exp(zShksMtx[yearInd][personInd]) # next periods's shock
-			  zInd, zWgt = GetLocation(zValues, zValue)
-			  ZsimsMtx[yearInd][personInd] = zValue
-			  ZIsimsMtx[yearInd][personInd] = zInd + 1 # GAUSS indexing
-			  if zWgt < 0.5:
-				  ZIsimsMtx[yearInd + 1][personInd] += 1
+				zValue = np.exp(zShksMtx[yearInd][personInd]) # next periods's shock
+				zInd, zWgt = GetLocation(zValues, zValue)
+				ZsimsMtx[yearInd][personInd] = zValue
+				ZIsimsMtx[yearInd][personInd] = zInd + 1 # GAUSS indexing
+				if zWgt < 0.5:
+					ZIsimsMtx[yearInd + 1][personInd] += 1
 
-		  age = age0
-		  ageInd = age - bornage
-		  if ageInd < 0:
-			  ageInd = 0
+			age = age0
+			ageInd = age - bornage
+			if ageInd < 0:
+				ageInd = 0
 
-<<<<<<< HEAD
-      for yearInd in range(year0, timespan + 1): # plus 1?
-          age = age0 + yearInd - year0
-          ageInd = age - bornage
-          if ageInd < 0:
-              ageInd = 0
-          agesimsMtx[yearInd][personInd] = float(age)
-=======
-		  zValue = np.exp(zShksMtx[year0][personInd])
-		  zInd, zWgt = GetLocation(zValues, zValue)
-		  zInd2 = 0
-		  if zNum2 > 1:
-			  zInd2 = zInd
->>>>>>> 03784f322ce9f41095485bb6d1d73cfbb0c432ec
+			zValue = np.exp(zShksMtx[year0][personInd])
+			zInd, zWgt = GetLocation(zValues, zValue)
+			zInd2 = 0
+			if zNum2 > 1:
+				zInd2 = zInd
 
-		  agesimsMtx[year0][personInd] = float(age)
-		  ZsimsMtx[year0][personInd] = zValue
-		  ZIsimsMtx[year0][personInd] = zInd + 1 # GAUSS indexing
-		  if zWgt < 0.5:
-			  ZIsimsMtx[year0][personInd] += 1
+			agesimsMtx[year0][personInd] = float(age)
+			ZsimsMtx[year0][personInd] = zValue
+			ZIsimsMtx[year0][personInd] = zInd + 1 # GAUSS indexing
+			if zWgt < 0.5:
+				ZIsimsMtx[year0][personInd] += 1
 
-		  lagCapital = initCapital[personInd]
-		  totAssets = initTotAssets[personInd]
-		  debt = initDebt[personInd]
-		  lkInd, lkWgt = GetLocation(lagcapvec, lagCapital)
-          lkWgt = 0
-		  lkInd2 = 0
-		  if lagcapNum > 1:
-			  lkInd2 = lkInd
-		  taInd, taWgt = GetLocation(totassetvec, totAssets)
-		  dInd, dWgt = GetLocation(debtvec, debt)
-		  liqDec = 0
-		  fracRepaid = 1
+			lagCapital = initCapital[personInd]
+			totAssets = initTotAssets[personInd]
+			debt = initDebt[personInd]
+			lkInd, lkWgt = GetLocation(lagcapvec, lagCapital)
+			lkInd2 = 0
+			if lagcapNum > 1:
+				lkInd2 = lkInd
+			taInd, taWgt = GetLocation(totassetvec, totAssets)
+			dInd, dWgt = GetLocation(debtvec, debt)
+			liqDec = 0
+			fracRepaid = 1
 
-		  liqDec_dbl = intrplte7D(liqDecisionMat, ageInd, ftInd, feInd, zInd2, lkInd2, taInd, dInd, dWgt, taWgt, feWgt, zWgt, lkWgt, feNum, zNum2, lagcapNum)
-		  fracRepaid = intrplte7D(fracRepaidMat, ageInd, ftInd, feInd, zInd2, lkInd2, taInd, dInd, dWgt, taWgt, feWgt, zWgt, lkWgt, feNum, zNum2, lagcapNum)
-		  if liqDec_dbl > 0.5:
-			  liqDec = 1
-		  if fracRepaid > 1:
-			  fracRepaid = 1
-		  if fracRepaid < 0:
-			  fracRepaid = 0
+			liqDec_dbl = intrplte7D(liqDecisionMat, ageInd, ftInd, feInd, zInd2, lkInd2, taInd, dInd, dWgt, taWgt, feWgt, zWgt, lkWgt, feNum, zNum2, lagcapNum)
+			fracRepaid = intrplte7D(fracRepaidMat, ageInd, ftInd, feInd, zInd2, lkInd2, taInd, dInd, dWgt, taWgt, feWgt, zWgt, lkWgt, feNum, zNum2, lagcapNum)
+			if liqDec_dbl > 0.5:
+				liqDec = 1
+			if fracRepaid > 1:
+				fracRepaid = 1
+			if fracRepaid < 0:
+				fracRepaid = 0
 
-		  asstsimsMtx[year0][personInd] = totAssets
-		  debtsimsMtx[year0][personInd] = debt
-		  fracRepaidsimsMtx[year0][personInd] = fracRepaid
-		  liqDecsimsMtx[year0][personInd] = float(liqDec)
+			asstsimsMtx[year0][personInd] = totAssets
+			debtsimsMtx[year0][personInd] = debt
+			fracRepaidsimsMtx[year0][personInd] = fracRepaid
+			liqDecsimsMtx[year0][personInd] = float(liqDec)
 
-          for yearInd in range(year0, timespan + 1): # plus 1?
-			  age = age0 + yearInd - year0
-			  ageInd = age - bornage
-			  if ageInd < 0:
-				  ageInd = 0
-			  agesimsMtx[yearInd][personInd] = float(age)
+			for yearInd in range(year0, timespan + 1):
+				age = age0 + yearInd - year0
+				ageInd = age - bornage
+				if ageInd < 0:
+					ageInd = 0
+				agesimsMtx[yearInd][personInd] = float(age)
 
-			  if liqDec == 1:
-				  dividendsimsMtx[yearInd][personInd] = -1
-				  totKsimsMtx[yearInd][personInd] = -1
-				  NKratsimsMtx[yearInd][personInd] = -1
-				  IRsimsMtx[yearInd][personInd] = -1
-				  NWsimsMtx[yearInd][personInd] = -1
-				  expensesimsMtx[yearInd][personInd] = -1
-				  outputsimsMtx[yearInd][personInd] = -1
-				  cashsimsMtx[yearInd][personInd] = -1
-				  if yearInd == timespan:
-					  continue
+				if liqDec == 1:
+					dividendsimsMtx[yearInd][personInd] = -1
+					totKsimsMtx[yearInd][personInd] = -1
+					NKratsimsMtx[yearInd][personInd] = -1
+					IRsimsMtx[yearInd][personInd] = -1
+					NWsimsMtx[yearInd][personInd] = -1
+					expensesimsMtx[yearInd][personInd] = -1
+					outputsimsMtx[yearInd][personInd] = -1
+					cashsimsMtx[yearInd][personInd] = -1
+					if yearInd == timespan:
+						continue
 
-				  asstsimsMtx[yearInd + 1][personInd] = -1e5
-				  debtsimsMtx[yearInd + 1][personInd] = -1
-				  fracRepaidsimsMtx[yearInd + 1][personInd] = -1
-				  liqDecsimsMtx[yearInd + 1][personInd] = 1
+					asstsimsMtx[yearInd + 1][personInd] = -1e5
+					debtsimsMtx[yearInd + 1][personInd] = -1
+					fracRepaidsimsMtx[yearInd + 1][personInd] = -1
+					liqDecsimsMtx[yearInd + 1][personInd] = 1
 
-				  zValue = np.exp(zShksMtx[yearInd + 1][personInd])
-				  zInd, zWgt = GetLocation(zValues, zValue)
-				  ZsimsMtx[yearInd + 1][personInd] = zValue
-				  ZIsimsMtx[yearInd + 1][personInd] = zInd + 1 # GAUSS indexing
-				  if zWgt < 0.5:
-					  ZIsimsMtx[yearInd + 1][personInd] += 1
-				  continue
+					zValue = np.exp(zShksMtx[yearInd + 1][personInd])
+					zInd, zWgt = GetLocation(zValues, zValue)
+					ZsimsMtx[yearInd + 1][personInd] = zValue
+					ZIsimsMtx[yearInd + 1][personInd] = zInd + 1 # GAUSS indexing
+					if zWgt < 0.5:
+						ZIsimsMtx[yearInd + 1][personInd] += 1
+					continue
 
-			  equity = totAssets - fracRepaid * debt
-			  eqInd, eqWgt = GetLocation(equityvec, equity)
+				equity = totAssets - fracRepaid * debt
+				eqInd, eqWgt = GetLocation(equityvec, equity)
 
-			  totK = intrplte6D(bestKFarm, ageInd, ftInd, feInd, zInd2, lkInd2, eqInd, eqWgt, feWgt, zWgt, lkWgt, feNum, zNum2, lagcapNum)
-			  NKrat = intrplte6D(bestNKratFarm, ageInd, ftInd, feInd, zInd2, lkInd2, eqInd, eqWgt, feWgt, zWgt, lkWgt, feNum, zNum2, lagcapNum)
-			  intRate = intrplte6D(bestIntRateFarm, ageInd, ftInd, feInd, zInd2, lkInd2, eqInd, eqWgt, feWgt, zWgt, lkWgt, feNum, zNum2, lagcapNum)
-			  cash = intrplte6D(bestCashFarm, ageInd, ftInd, feInd, zInd2, lkInd2, eqInd, eqWgt, feWgt, zWgt, lkWgt, feNum, zNum2, lagcapNum)
-			  debt = intrplte6D(bestDebtFarm, ageInd, ftInd, feInd, zInd2, lkInd2, eqInd, eqWgt, feWgt, zWgt, lkWgt, feNum, zNum2, lagcapNum)
+				totK = intrplte6D(bestKFarm, ageInd, ftInd, feInd, zInd2, lkInd2, eqInd, eqWgt, feWgt, zWgt, lkWgt, feNum, zNum2, lagcapNum)
+				NKrat = intrplte6D(bestNKratFarm, ageInd, ftInd, feInd, zInd2, lkInd2, eqInd, eqWgt, feWgt, zWgt, lkWgt, feNum, zNum2, lagcapNum)
+				intRate = intrplte6D(bestIntRateFarm, ageInd, ftInd, feInd, zInd2, lkInd2, eqInd, eqWgt, feWgt, zWgt, lkWgt, feNum, zNum2, lagcapNum)
+				cash = intrplte6D(bestCashFarm, ageInd, ftInd, feInd, zInd2, lkInd2, eqInd, eqWgt, feWgt, zWgt, lkWgt, feNum, zNum2, lagcapNum)
+				debt = intrplte6D(bestDebtFarm, ageInd, ftInd, feInd, zInd2, lkInd2, eqInd, eqWgt, feWgt, zWgt, lkWgt, feNum, zNum2, lagcapNum)
 
-			  if totK < 0:
-				  totK = 0
-			  if NKrat < 0:
-				  NKrat = 0
-			  if intRate < bigR:
-				  intRate = bigR
-			  if cash < 0:
-				  cash = 0
-			  if debt < 0:
-				  debt = 0
+				if totK < 0:
+					totK = 0
+				if NKrat < 0:
+					NKrat = 0
+				if intRate < bigR:
+					intRate = bigR
+				if cash < 0:
+					cash = 0
+				if debt < 0:
+					debt = 0
 
-<<<<<<< HEAD
-          lagCapital = totK
-          totAssets = ((1 - delta + eGK) * totK + output - expenses + cash) / bigG
-          taInd, taWgt = GetLocation(totassetvec, totAssets)
-          dInd, dWgt = GetLocation(debtvec, debt)
-          lkInd, lkWgt = GetLocation(lagcapvec, lagCapital)
-          lkWgt = 0
-          lkInd2 = 0
-          if lagcapNum > 1:
-              lkInd2 = lkInd
+				dividend = equity + debt / intRate - totK - cash
+				if dividend < (-c_0 * eqInject):
+					dividend = (-c_0 * eqInject)
 
-          zInd, zWgt = GetLocation(zValues, zValue)
-          zInd2 = 0
-          if zNum2 > 1:
-              zInd2 = zInd
-          ZsimsMtx[yearInd + 1][personInd] = zValue
-          ZIsimsMtx[yearInd + 1][personInd] = zInd + 1 # + 1 GAUSS indexing
-          if zWgt < 0.5:
-              ZIsimsMtx[yearInd + 1][personInd] += 1
-          FEIsimsMtx[yearInd + 1][personInd] = FEIsimsMtx[0][personInd]
-=======
-			  dividend = equity + debt / intRate - totK - cash
-			  if dividend < (-c_0 * eqInject):
-				  dividend = (-c_0 * eqInject)
+				igoods = getBaseIGoods(totK, feValue, gag, agag, ag3, igshift) * NKrat
+				expenses = igoods + fixedcost
+				zValue = np.exp(zShksMtx[yearInd + 1][personInd]) # next period's shock
+				output = feValue * zValue * getBaseRevenues(totK, igoods, gamma, ag2) # output = revenues
 
-			  igoods = getBaseIGoods(totK, feValue, gag, agag, ag3, igshift) * NKrat
-			  expenses = igoods + fixedcost
-			  zValue = np.exp(zShksMtx[yearInd + 1][personInd]) # next period's shock
-			  output = feValue * zValue * getBaseRevenues(totK, igoods, gamma, ag2) # output = revenues
->>>>>>> 03784f322ce9f41095485bb6d1d73cfbb0c432ec
+				dividendsimsMtx[yearInd][personInd] = dividend
+				totKsimsMtx[yearInd][personInd] = totK
+				NKratsimsMtx[yearInd][personInd] = NKrat
+				NWsimsMtx[yearInd][personInd] = equity
+				expensesimsMtx[yearInd][personInd] = expenses
+				outputsimsMtx[yearInd][personInd] = output
+				IRsimsMtx[yearInd][personInd] = intRate
+				cashsimsMtx[yearInd][personInd] = cash
 
-			  dividendsimsMtx[yearInd][personInd] = dividend
-			  totKsimsMtx[yearInd][personInd] = totK
-			  NKratsimsMtx[yearInd][personInd] = NKrat
-			  NWsimsMtx[yearInd][personInd] = equity
-			  expensesimsMtx[yearInd][personInd] = expenses
-			  outputsimsMtx[yearInd][personInd] = output
-			  IRsimsMtx[yearInd][personInd] = intRate
-			  cashsimsMtx[yearInd][personInd] = cash
+				if yearInd == timespan:
+					continue
 
-			  if yearInd == timespan:
-				  continue
+				#############   now move to t+1 states ###########
+				lagCapital = totK
+				totAssets = ((1 - delta + eGK) * totK + output - expenses + cash) / bigG
+				taInd, taWgt = GetLocation(totassetvec, totAssets)
+				dInd, dWgt = GetLocation(debtvec, debt)
+				lkInd, lkWgt = GetLocation(lagcapvec, lagCapital)
+				lkInd2 = 0
+				if lagcapNum > 1:
+					lkInd2 = lkInd
 
-			  #                                 #############   now move to t+1 states ###########
+				zInd, zWgt = GetLocation(zValues, zValue)
+				zInd2 = 0
+				if zNum2 > 1:
+					zInd2 = zInd
+				ZsimsMtx[yearInd + 1][personInd] = zValue
+				ZIsimsMtx[yearInd + 1][personInd] = zInd # + 1 GAUSS indexing
+				if zWgt < 0.5:
+					ZIsimsMtx[yearInd + 1][personInd] += 1
+				FEIsimsMtx[yearInd + 1][personInd] = FEIsimsMtx[0][personInd]
 
-<<<<<<< HEAD
-          asstsimsMtx[yearInd + 1][personInd] = totAssets
-          debtsimsMtx[yearInd + 1][personInd] = debt
-          fracRepaidsimsMtx[yearInd + 1][personInd] = fracRepaid # + 2?
-          liqDecsimsMtx[yearInd + 1][personInd] = float(liqDec)
-=======
-			  lagCapital = totK
-			  totAssets = ((1 - delta + eGK) * totK + output - expenses + cash) / bigG
-			  taInd, taWgt = GetLocation(totassetvec, totAssets)
-			  dInd, dWgt = GetLocation(debtvec, debt)
-			  lkInd, lkWgt = GetLocation(lagcapvec, lagCapital)
-			  lkInd2 = 0
-			  if lagcapNum > 1:
-				  lkInd2 = lkInd
->>>>>>> 03784f322ce9f41095485bb6d1d73cfbb0c432ec
+				liqDec = 0
+				fracRepaid = 1
 
-			  zInd, zWgt = GetLocation(zValues, zValue)
-			  zInd2 = 0
-			  if zNum2 > 1:
-				  zInd2 = zInd
-			  ZsimsMtx[yearInd + 1][personInd] = zValue
-			  ZIsimsMtx[yearInd + 1][personInd] = zInd # + 1 GAUSS indexing
-			  if zWgt < 0.5:
-				  ZIsimsMtx[yearInd + 1][personInd] += 1
-			  FEIsimsMtx[yearInd + 1][personInd] = FEIsimsMtx[0][personInd]
+				liqDec_dbl = intrplte7D(liqDecisionMat, ageInd + 1, ftInd, feInd, zInd2, lkInd2, taInd, dInd, dWgt, taWgt, feWgt, zWgt, lkWgt, feNum, zNum2, lagcapNum)
+				fracRepaid = intrplte7D(fracRepaidMat, ageInd + 1, ftInd, feInd, zInd2, lkInd2, taInd, dInd, dWgt, taWgt, feWgt, zWgt, lkWgt, feNum, zNum2, lagcapNum)
 
-			  liqDec = 0
-			  fracRepaid = 1
+				if liqDec_dbl > 0.5:
+					liqDec = 1
+				if fracRepaid > 1:
+					fracRepaid = 1
+				if fracRepaid < 0:
+					fracRepaid = 0
 
-			  liqDec_dbl = intrplte7D(liqDecisionMat, ageInd + 1, ftInd, feInd, zInd2, lkInd2, taInd, dInd, dWgt, taWgt, feWgt, zWgt, lkWgt, feNum, zNum2, lagcapNum)
-			  fracRepaid = intrplte7D(fracRepaidMat, ageInd + 1, ftInd, feInd, zInd2, lkInd2, taInd, dInd, dWgt, taWgt, feWgt, zWgt, lkWgt, feNum, zNum2, lagcapNum)
-
-<<<<<<< HEAD
-save_processed_data_txt(FEIsimsMtx, "FEindxS.txt", iopath)
-save_processed_data_txt(ZsimsMtx, "ZValsS.txt", iopath)
-save_processed_data_txt(ZIsimsMtx, "ZindxS.txt", iopath)
-save_processed_data_txt(asstsimsMtx, "assetsS.txt", iopath)
-save_processed_data_txt(debtsimsMtx, "debtS.txt", iopath)
-save_processed_data_txt(fracRepaidsimsMtx, "fracRPS.txt", iopath)
-save_processed_data_txt(liqDecsimsMtx, "liqDecS.txt", iopath)
-save_processed_data_txt(agesimsMtx, "ageS.txt", iopath)
-save_processed_data_txt(dividendsimsMtx, "divsS.txt", iopath)
-save_processed_data_txt(totKsimsMtx, "totKS.txt", iopath)
-save_processed_data_txt(NKratsimsMtx, "NKratios.txt", iopath)
-save_processed_data_txt(cashsimsMtx, "cashS.txt", iopath)
-save_processed_data_txt(IRsimsMtx, "intRateS.txt", iopath)
-save_processed_data_txt(NWsimsMtx, "equityS.txt", iopath)
-save_processed_data_txt(outputsimsMtx, "outputS.txt", iopath)
-save_processed_data_txt(expensesimsMtx, "expenseS.txt", iopath)
-=======
-			  if liqDec_dbl > 0.5:
-				  liqDec = 1
-			  if fracRepaid > 1:
-				  fracRepaid = 1
-			  if fracRepaid < 0:
-				  fracRepaid = 0
-
-			  asstsimsMtx[yearInd + 1][personInd] = totAssets
-			  debtsimsMtx[yearInd + 1][personInd] = debt
-			  fracRepaidsimsMtx[yearInd + 1][personInd] = fracRepaid
-			  liqDecsimsMtx[yearInd + 1][personInd] = float(liqDec)
+				asstsimsMtx[yearInd + 1][personInd] = totAssets
+				debtsimsMtx[yearInd + 1][personInd] = debt
+				fracRepaidsimsMtx[yearInd + 1][personInd] = fracRepaid
+				liqDecsimsMtx[yearInd + 1][personInd] = float(liqDec)
 
 	simulation(initAges, initYears, initCapital, initTotAssets,
 					 initDebt, FTypesims, feShks, feValues, zShksMtx, zValues,
@@ -507,4 +435,7 @@ save_processed_data_txt(expensesimsMtx, "expenseS.txt", iopath)
 	save_processed_data_txt(NWsimsMtx, "equityS.txt", iopath)
 	save_processed_data_txt(outputsimsMtx, "outputS.txt", iopath)
 	save_processed_data_txt(expensesimsMtx, "expenseS.txt", iopath)
->>>>>>> 03784f322ce9f41095485bb6d1d73cfbb0c432ec
+
+
+if __name__ == "__main__":
+	run_sim()
