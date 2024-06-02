@@ -1,4 +1,6 @@
 import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib import cm
 
 from variables import *
 from functions import logitrv
@@ -115,8 +117,10 @@ TFPaggshks, TFP_FE, TFPaggeffs, tkqntdat, DAqntdat, CAqntdat, nkqntdat, gikqntda
 														   datawgts, chrttype, iobsmat, dvgobsmat,
 			  												dividends, divgrowth, LTKratio, debtasst, nkratio, gikratio,
 			    											CAratio, ykratio, dumdwgts, avgage)
+
 beta_nu = False
-chi_lambda = True
+chi_lambda = False
+plot = True
 
 if beta_nu:
 	# Make grid
@@ -152,15 +156,18 @@ if beta_nu:
 			   rloutput, totcap, intgoods, obsmat,
 			   farmtype, av_cows, famsize, datawgts, chrttype, iobsmat,
 			   dvgobsmat, dividends, divgrowth, LTKratio, debtasst, nkratio,
-			   gikratio, CAratio, ykratio, dumdwgts, numsims, avgage)       # TODO: replace with onerun that calls C code
+			   gikratio, CAratio, ykratio, dumdwgts, numsims, avgage)
+
+	np.savetxt('output/beta_nu_smd.txt', obj)
+
 
 if chi_lambda:
 
 	Nchi = 10
-	chi_range = np.linspace(0, 0.99, Nchi)
+	chi_range = np.linspace(1E-10, 0.99, Nchi)
 
 	Nlambda = 10
-	lambda_range = np.linspace(0, 0.50, Nlambda)
+	lambda_range = np.linspace(1E-10, 0.50, Nlambda)
 
 	# Allocate
 	obj = np.nan + np.zeros((Nchi, Nlambda))
@@ -193,5 +200,93 @@ if chi_lambda:
 								 farmtype, av_cows, famsize, datawgts, chrttype, iobsmat,
 								 dvgobsmat, dividends, divgrowth, LTKratio, debtasst, nkratio,
 								 gikratio, CAratio, ykratio, dumdwgts, numsims,
-								 avgage)  # TODO: replace with onerun that calls C code
+								 avgage)
 
+	np.savetxt('output/chi_lambda_smd.txt', obj)
+
+if plot:
+
+	# BETA AND NU
+	beta_nu = np.loadtxt('output/beta_nu_smd.txt')
+
+	Nbeta = 10
+	Nnu = 10
+	beta = np.linspace(0.85, 0.99, Nbeta)
+	nu = np.linspace(2, 5, Nnu)
+
+	X, Y = np.meshgrid(beta, nu)
+
+	# Plot figure in three dimensions
+	plt.style.use('seaborn-whitegrid')
+
+	fig = plt.figure(figsize=(10, 5), dpi=100)
+	ax = fig.add_subplot(1, 1, 1, projection='3d')
+
+	surf = ax.plot_surface(X, Y, beta_nu, cmap=cm.jet)
+
+	# Customize the axis.
+	ax.set_xlabel(f'\u03B2')
+	ax.set_ylabel(r'$\nu$')
+	ax.set_title(rf'Simulated Minimum Distance ($\beta$, $\nu$)')
+	ax.set_xlim(0.85, 1)
+	ax.set_ylim(2, 5)
+	ax.invert_xaxis()
+	ax.invert_zaxis()
+
+	# Add a color bar which maps values to colors.
+	fig.colorbar(surf, shrink=0.5, aspect=5)
+
+	plt.show()
+
+	# Find min. parameters
+	min_idx = np.argmin(beta_nu)
+
+	beta_idx = int(min_idx % 10)
+	nu_idx = int((min_idx - (min_idx % 10)) / 10)
+
+	print(f'Minimum is found at ({beta[beta_idx], nu[nu_idx]}) = {beta_nu.flatten()[min_idx]}')
+
+	# CHI AND LAMBDA
+	chi_lambda = np.loadtxt('output/chi_lambda_smd.txt')
+
+	Nchi = 10
+	chi0 = np.linspace(0, 0.99, Nchi)
+
+	Nlambda = 10
+	lambda_ = np.linspace(0, 0.50, Nlambda)
+
+	w_0 = 15
+	c_0 = 3.665841
+	chi = chi0 * (w_0 + c_0)
+
+	X, Y = np.meshgrid(chi, lambda_)
+
+	# Plot figure in three dimensions
+	plt.style.use('seaborn-whitegrid')
+
+	fig = plt.figure(figsize=(10, 5))
+	ax = fig.add_subplot(1, 1, 1, projection='3d')
+
+	surf = ax.plot_surface(X, Y, chi_lambda, cmap=cm.jet)
+
+	# Customize the axis.
+	ax.set_xlabel(r'$\chi_C$')
+	ax.set_ylabel(r'$\lambda$')
+	ax.set_title(rf'Simulated Minimum Distance ($\chi_C$, $\lambda$)')
+	# ax.set_xlim(chi[0], 1)
+	# ax.set_ylim(lambda_[0], 0.5)
+	ax.invert_xaxis()
+	ax.invert_zaxis()
+
+	# Add a color bar which maps values to colors.
+	fig.colorbar(surf, shrink=0.5, aspect=5)
+
+	plt.show()
+
+	# Find min. parameters
+	min_idx = np.argmin(chi_lambda)
+
+	chi_idx = int(min_idx % 10)
+	lambda_idx = int((min_idx - (min_idx % 10)) / 10)
+
+	print(f'Minimum is found at {chi[chi_idx], lambda_[lambda_idx]} = {chi_lambda.flatten()[min_idx]}')

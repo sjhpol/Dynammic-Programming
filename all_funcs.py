@@ -1,6 +1,8 @@
 from markch import markch
 from variables import *
 from functions import logitrv, logit
+from babyfarm18b import solve_model
+from Simulation import run_sim
 
 import numpy as np
 import os
@@ -1667,6 +1669,8 @@ def onerun(parmvec, fixvals, betamax, linprefs, nobeq, w_0, bigR, numFTypes, ina
 	### TODO: HERE THEY CALL THE C PROGRAM
 	## Add the python version of the C
 	# execret = exec(rulecall, "")  # Ensure `exec_rulecall` is defined
+	solve_model()  # Solve the model with VFI
+	run_sim() 	# Run the simulations
 
 	## WE NEED TO WAIT UNTIL THIS IS DONE AS WE NEED FILES FROM THE C CODE
 	# Load simulations
