@@ -110,6 +110,7 @@ else:
 	executable_extension = ".exe"
 
 #rootdir = os.path.join(rootdir,"/DP-MESTERNE/Dynammic-Programming/")
+rootdir = "C:\\Users\\zcl375\\Desktop\\Dynammic-Programming\\"
 rulecall = os.path.join(rootdir, "ccode") + directory_key + "babyfarm18b" + executable_extension
 iopath = os.path.join(rootdir, "iofiles") + directory_key
 datapath = os.path.join(rootdir, "data")
@@ -125,5 +126,5 @@ elif os.getlogin() == "Simon":
 elif os.getlogin() == "":
 	VFI_path = ...
 else:
-	VFI_path = "/Users/hjaltewallin/Code/DP-MESTERNE"
+	VFI_path = "C:\\Users\\zcl375\\Desktop\\Dynammic-Programming\\VFI_output\\"
 	#raise EnvironmentError("User not recognized. Please set the correct path.")
