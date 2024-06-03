@@ -6,7 +6,7 @@ from functions import logitrv
 
 from all_funcs import loaddat, initdist, datasetup, getgrids, makepvecs, onerun, graphs, comp_stats
 from Simulation import run_sim
-from babyfarm18b import solve_model
+from solve_model import solve_model
 
 from scipy.optimize import minimize
 
@@ -128,25 +128,22 @@ TFPaggshks, TFP_FE, TFPaggeffs, tkqntdat, DAqntdat, CAqntdat, nkqntdat, gikqntda
 numparms = parmvec.shape[0]
 fixvals = parmvec
 zerovec = 1
-
-res = minimize(onerun, x0=parmvec, args=(fixvals, betamax, linprefs, nobeq, w_0, bigR, numFTypes, inadaU, nonshft, noDScost, nofcost,
-		  	nocolcnst, prnres, noReneg, finparms0, idioshks, randrows,
-		   rloutput, totcap, intgoods, obsmat,
-		   farmtype, av_cows, famsize, datawgts, chrttype, iobsmat,
-		   dvgobsmat, dividends, divgrowth, LTKratio, debtasst, nkratio,
-		   gikratio, CAratio, ykratio, dumdwgts, numsims, avgage),
-			   options={'maxiter': 10})
-
-
-numparms = parmvec.shape[0]
-fixvals = parmvec
-zerovec = 1 					# Note, that this becomes a vector later <_<. Also never has zeroes
 onerun(parmvec, fixvals, betamax, linprefs, nobeq, w_0, bigR, numFTypes, inadaU, nonshft, noDScost, nofcost,
 		  	nocolcnst, prnres, noReneg, finparms0, idioshks, randrows,
 		   rloutput, totcap, intgoods, obsmat,
 		   farmtype, av_cows, famsize, datawgts, chrttype, iobsmat,
 		   dvgobsmat, dividends, divgrowth, LTKratio, debtasst, nkratio,
 		   gikratio, CAratio, ykratio, dumdwgts, numsims, avgage)
+
+
+# Try to minimize
+res = minimize(onerun, x0=parmvec, args=(fixvals, betamax, linprefs, nobeq, w_0, bigR, numFTypes, inadaU, nonshft, noDScost, nofcost,
+		  	nocolcnst, prnres, noReneg, finparms0, idioshks, randrows,
+		   rloutput, totcap, intgoods, obsmat,
+		   farmtype, av_cows, famsize, datawgts, chrttype, iobsmat,
+		   dvgobsmat, dividends, divgrowth, LTKratio, debtasst, nkratio,
+		   gikratio, CAratio, ykratio, dumdwgts, numsims, avgage),
+			   options={'maxiter': 100})
 
 
 
@@ -163,7 +160,7 @@ if comp_time:
 	l_ = False
 	chi_ = False
 
-	# Change in bequest tax => change in babyfarm18b.py to 0.15
+	# Change in bequest tax => change in solve_model.py to 0.15
 	if beq:
 		solve_model()
 		run_sim()

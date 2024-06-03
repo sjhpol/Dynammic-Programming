@@ -1,6 +1,6 @@
 from settings import *
 
-from babyfarm18b import prodFnParms, numSims, ftNum, alpha1, gamma1, GetLocation, alpha2, gamma2, feNum, zNum2, lagcapNum, c_0, eqInject, getBaseIGoods, igshift, fixedcost, getBaseRevenues, delta, eGK
+from solve_model import prodFnParms, numSims, ftNum, alpha1, gamma1, GetLocation, alpha2, gamma2, feNum, zNum2, lagcapNum, c_0, eqInject, getBaseIGoods, igshift, fixedcost, getBaseRevenues, delta, eGK
 
 
 def run_sim():

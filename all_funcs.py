@@ -1,7 +1,7 @@
 from markch import markch
 from settings import *
 from functions import logitrv, logit
-from babyfarm18b import solve_model
+from solve_model import solve_model
 from Simulation import run_sim
 
 import numpy as np
